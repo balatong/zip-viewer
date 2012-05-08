@@ -16,23 +16,24 @@
         android:id="@+id/chk_item_unzip"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
-
+
     <ImageView
         android:id="@+id/img_item_icon"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:src="@drawable/file_icon" android:paddingTop="8dp"/>
+        android:src="@drawable/ic_menu_file" android:paddingTop="8dp" android:paddingLeft="2dp" android:paddingRight="4dp"/>
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical" >
-
+
         <TextView
             android:id="@+id/txt_item_zip_entry"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textAppearance="?android:attr/textAppearanceMedium" android:paddingTop="8dp"/>
+            android:layout_marginTop="4dp"
+            android:textAppearance="?android:attr/textAppearanceMedium" android:paddingTop="6dp"/>
 
         <TextView
             android:id="@+id/txt_item_zip_desc"

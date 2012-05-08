@@ -7,51 +7,51 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content" >
-
+
         <ImageButton
             android:id="@+id/img_btn_menu_open"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:src="@drawable/folder_open_icon" />
-
+            android:src="@drawable/ic_menu_folder_open" />
+
         <ImageButton
             android:id="@+id/img_btn_menu_unzip"
             style="@android:style/Widget.ImageButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:src="@drawable/unzip_icon"
+            android:src="@drawable/ic_menu_unzip"
             android:tag="@string/menu_extract" />
-
+
         <ImageButton
             android:id="@+id/img_btn_menu_check"
             style="@android:style/Widget.ImageButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:src="@drawable/check_icon"
+            android:src="@drawable/ic_menu_check"
             android:tag="@string/menu_test" />
-
+
         <ImageButton
             android:id="@+id/img_btn_menu_add"
             style="@android:style/Widget.ImageButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:src="@drawable/add_icon"
+            android:src="@drawable/ic_menu_add"
             android:tag="@string/menu_add" />
-
+
         <ImageButton
             android:id="@+id/img_btn_menu_delete"
             style="@android:style/Widget.ImageButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:src="@drawable/delete_icon"
+            android:src="@drawable/ic_menu_delete"
             android:tag="@string/menu_delete" />
-
+
         <ImageButton
             android:id="@+id/img_btn_menu_info"
             style="@android:style/Widget.ImageButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:src="@drawable/info_icon"
+            android:src="@drawable/ic_menu_info"
             android:tag="@string/menu_info" />
 
     </LinearLayout>

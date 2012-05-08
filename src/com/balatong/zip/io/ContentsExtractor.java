@@ -1,5 +1,7 @@
 package com.balatong.zip.io;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -81,16 +83,17 @@ public class ContentsExtractor extends AsyncTask<Object, String, Integer> {
 	}
 
 	private void writeFile(String key, InputStream is, String extractPath) throws IOException {
+		//BufferedInputStream bis = new BufferedInputStream(is);
 		FileOutputStream fos = new FileOutputStream(extractPath + "/" + key);
+		//BufferedOutputStream bos = new BufferedOutputStream(fos);
 		byte[] buffer = new byte[MAX_BYTES];
-		int offset = 0;
-		int count = is.read(buffer, 0, MAX_BYTES);
-		while (count > 0) {
+		int count = 0;
+		while ((count = is.read(buffer, 0, MAX_BYTES)) > 0) {
 			fos.write(buffer, 0, count);
-			offset += count;
-			count = is.read(buffer, 0, MAX_BYTES);
 		}
 		fos.close();
+		//bos.close();
+		//bis.close();
 		logger.debug("Written to file: " + extractPath + "/" + key + ".");
 	}
 

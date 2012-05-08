@@ -102,7 +102,7 @@ public class ContentsAdapter extends ArrayAdapter<String> implements AdapterView
 		if (obj != null && obj instanceof ZipEntry) {
 			ZipEntry zipEntry = (ZipEntry)obj;
 			ImageView image = (ImageView)view.findViewById(R.id.img_item_icon);
-			image.setImageResource(R.drawable.file_icon);
+			image.setImageResource(R.drawable.ic_menu_file);
 			TextView entry = (TextView)view.findViewById(R.id.txt_item_zip_entry);
 			entry.setText(key);
 			TextView desc = (TextView)view.findViewById(R.id.txt_item_zip_desc);
@@ -115,7 +115,7 @@ public class ContentsAdapter extends ArrayAdapter<String> implements AdapterView
 		}
 		else if (obj != null && obj instanceof Map) {
 			ImageView image = (ImageView)view.findViewById(R.id.img_item_icon);
-			image.setImageResource(R.drawable.folder_close_icon);
+			image.setImageResource(R.drawable.ic_menu_folder_close);
 			TextView entry = (TextView)view.findViewById(R.id.txt_item_zip_entry);
 			entry.setText(key);
 			TextView desc = (TextView)view.findViewById(R.id.txt_item_zip_desc);
