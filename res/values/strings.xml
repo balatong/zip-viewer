@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="app_name">Zip Viewer</string>
+    <string name="app_name">Unzipper</string>
     <string name="menu_add">Add</string>
     <string name="menu_extract">Extract</string>
     <string name="menu_test">Test</string>
@@ -9,10 +9,13 @@
     <string name="menu_delete">Delete</string>
     <string name="menu_info">Info</string>
     <string name="reading_file">Reading %d file(s).</string>
-    <string name="extract_to_directory">Extract files</string>
-    <string name="err_not_valid_zip_file">%s is not a valid zip file.</string>
+    <string name="extract_to_directory">Extract file(s):</string>
+    <string name="extracting_file">Extracting file: %s...</string>
+    <string name="extracting_files">Extracting file(s).</string>
+    <string name="extracted_num_files">Extracted %d file(s).</string>
+    <string name="err_not_valid_zip_file">%s is not a valid archive.</string>
     <string name="info_install_file_manager">Please install a File Manager.</string>
-    <string name="info_available_in_paid_version">This feature would be available in the paid version.</string>
+    <string name="info_available_in_paid_version">This feature would be available in the donate version.</string>
     <string name="warn_not_yet_implemented">Not yet implemented.</string>
     <string name="info_please_input_path">Please input the directory where you want to extract the file(s).</string>
 
