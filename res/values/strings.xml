@@ -15,7 +15,7 @@
     <string name="extracted_num_files">Extracted %d file(s).</string>
     <string name="err_not_valid_zip_file">%s is not a valid archive.</string>
     <string name="info_install_file_manager">Please install a File Manager.</string>
-    <string name="info_available_in_paid_version">This feature would be available in the donate version.</string>
+    <string name="info_available_in_paid_version">This feature would hopefully be available in future releases.</string>
     <string name="warn_not_yet_implemented">Not yet implemented.</string>
     <string name="info_please_input_path">Please input the directory where you want to extract the file(s).</string>
 
