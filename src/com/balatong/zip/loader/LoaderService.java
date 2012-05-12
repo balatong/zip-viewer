@@ -21,6 +21,7 @@ public class LoaderService extends BaseService {
 
 	private static Logger logger = Logger.getLogger(LoaderService.class.getName());
 	
+	private File file;
 	private FileReader reader;
 	private LoaderBinder fBinder = new LoaderBinder();
 	
@@ -34,18 +35,28 @@ public class LoaderService extends BaseService {
 		public Map<String, Object> getResult() {
 			return reader.getEntries();
 		}
+		public File getFile() {
+			return file;
+		}
+	}
+
+	@Override
+	public int onStartCommand(Intent intent, int flags, int startId) {
+		int sticky = super.onStartCommand(intent, flags, startId);
+		readFile(intent);
+		return sticky;
 	}
 	
 	@Override
 	public IBinder onBind(Intent intent) {
 		return fBinder;
 	}
-
+	
 	private File readFile(Intent intent) {
 		if (intent.getData() == null)
 			return null;
 
-		File file = new File(intent.getData().getPath());
+		file = new File(intent.getData().getPath());
 		if (!file.isFile()) {
 			logger.debug("Path " + file.getAbsolutePath()
 					+ " is not a valid file.");

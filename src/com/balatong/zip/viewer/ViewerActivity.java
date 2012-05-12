@@ -96,12 +96,17 @@ public class ViewerActivity extends BaseActivity {
 		};
 		
 		Intent service = new Intent(ViewerActivity.this, LoaderService.class);
-		bindService(service, connection, Context.BIND_AUTO_CREATE); 
-
+		if (getIntent().getData() != null) {
+			service.setData(getIntent().getData());
+			startService(service);
+		}
+		bindService(service, connection, Context.BIND_AUTO_CREATE);
+		
 		ImageButton menuOpen = (ImageButton)findViewById(R.id.img_btn_menu_open);
 		menuOpen.setEnabled(true);
+		
 	}
-	
+		
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, final Intent intent) {
 		super.onActivityResult(requestCode, resultCode, intent);
@@ -155,7 +160,7 @@ public class ViewerActivity extends BaseActivity {
 						final String extractPath = ((EditText)viewExtractPath.findViewById(R.id.txt_extract_path)).getText().toString();
 						final Map<String, Object> zipEntries = zipContentsAdapter.getCheckedItems();
 						ContentsExtractor extractor = new ContentsExtractor(ViewerActivity.this);
-						extractor.setFile(file);
+						extractor.setFile(fBinder.getFile());
 						extractor.execute(zipEntries, extractPath);
 					}
 				});
@@ -320,7 +325,9 @@ public class ViewerActivity extends BaseActivity {
 		super.onDestroy();
 		
 		if (isBound) {
+			Intent service = new Intent(ViewerActivity.this, LoaderService.class);
 			unbindService(connection);
+			stopService(service);
 			isBound = false;
 		}
 	}
