@@ -22,23 +22,24 @@ public final class R {
         public static final int ic_menu_unzip=0x7f020008;
     }
     public static final class id {
-        public static final int adView=0x7f050007;
+        public static final int RelativeLayout1=0x7f050007;
+        public static final int adView=0x7f050008;
         public static final int chk_item_unzip=0x7f050003;
         public static final int frm_chk_item_unzip=0x7f050002;
-        public static final int img_btn_menu_add=0x7f05000b;
-        public static final int img_btn_menu_check=0x7f05000a;
-        public static final int img_btn_menu_delete=0x7f05000c;
-        public static final int img_btn_menu_info=0x7f05000d;
-        public static final int img_btn_menu_open=0x7f050008;
-        public static final int img_btn_menu_unzip=0x7f050009;
+        public static final int img_btn_menu_add=0x7f05000c;
+        public static final int img_btn_menu_check=0x7f05000b;
+        public static final int img_btn_menu_delete=0x7f05000d;
+        public static final int img_btn_menu_info=0x7f05000e;
+        public static final int img_btn_menu_open=0x7f050009;
+        public static final int img_btn_menu_unzip=0x7f05000a;
         public static final int img_item_icon=0x7f050004;
-        public static final int list_directory_contents=0x7f050010;
-        public static final int pbar_status_activity=0x7f05000e;
+        public static final int list_directory_contents=0x7f050011;
+        public static final int pbar_status_activity=0x7f05000f;
         public static final int textView1=0x7f050000;
         public static final int txt_extract_path=0x7f050001;
         public static final int txt_item_zip_desc=0x7f050006;
         public static final int txt_item_zip_entry=0x7f050005;
-        public static final int txt_status_message=0x7f05000f;
+        public static final int txt_status_message=0x7f050010;
     }
     public static final class layout {
         public static final int extract_path=0x7f030000;
@@ -47,21 +48,22 @@ public final class R {
     }
     public static final class string {
         public static final int app_name=0x7f040000;
-        public static final int err_not_valid_zip_file=0x7f04000c;
-        public static final int extract_to_directory=0x7f040008;
-        public static final int extracted_num_files=0x7f04000b;
-        public static final int extracting_file=0x7f040009;
-        public static final int extracting_files=0x7f04000a;
-        public static final int info_available_in_paid_version=0x7f04000e;
-        public static final int info_install_file_manager=0x7f04000d;
-        public static final int info_please_input_path=0x7f040010;
+        public static final int err_not_valid_zip_file=0x7f04000d;
+        public static final int extract_to_directory=0x7f040009;
+        public static final int extracted_num_files=0x7f04000c;
+        public static final int extracting_file=0x7f04000a;
+        public static final int extracting_files=0x7f04000b;
+        public static final int info_available_in_paid_version=0x7f04000f;
+        public static final int info_install_file_manager=0x7f04000e;
+        public static final int info_please_input_path=0x7f040011;
         public static final int menu_add=0x7f040001;
         public static final int menu_copy=0x7f040004;
         public static final int menu_delete=0x7f040005;
         public static final int menu_extract=0x7f040002;
         public static final int menu_info=0x7f040006;
         public static final int menu_test=0x7f040003;
-        public static final int reading_file=0x7f040007;
-        public static final int warn_not_yet_implemented=0x7f04000f;
+        public static final int reading_file=0x7f040008;
+        public static final int select_file_to_load=0x7f040007;
+        public static final int warn_not_yet_implemented=0x7f040010;
     }
 }

@@ -16,20 +16,55 @@ import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
 
 import com.balatong.logger.Logger;
+import com.balatong.zip.R;
+import com.balatong.zip.loader.LoaderService;
+import com.balatong.zip.viewer.ViewerActivity;
 
+import android.content.Context;
+import android.content.Intent;
 import android.os.AsyncTask;
+import android.support.v4.content.LocalBroadcastManager;
 
 public class FileReader extends AsyncTask<File, Integer, Map<String, Object>>{
 		
 	private static Logger logger = Logger.getLogger(FileReader.class.getName());
 
+	private Context context;
 	private File file;
-	private Map<String, Object> zipStructure = new HashMap<String, Object>();
+	private Map<String, Object> zipEntries = new HashMap<String, Object>();
+
+	public FileReader(Context ctx) {
+		this.context = ctx;
+	}
 	
 	@Override
-	protected Map<String, Object> doInBackground(File... file) {
+	protected Map<String, Object> doInBackground(File... file) { 
 		int numFiles = readFile(file[0]);
-		return zipStructure;
+		return zipEntries;
+	}
+	
+	@Override
+	protected void onPreExecute() {
+		super.onPreExecute();
+		LocalBroadcastManager.getInstance(context).sendBroadcastSync(wrapIntent(
+				ViewerActivity.VA_START_FILE_READ, 
+				""));			
+	}
+	
+	@Override
+	protected void onPostExecute(Map<String, Object> result) {
+		super.onPostExecute(result);
+		LocalBroadcastManager.getInstance(context).sendBroadcastSync(wrapIntent(
+				ViewerActivity.VA_END_FILE_READ, 
+				""));			
+	}	
+	
+	@Override
+	protected void onProgressUpdate(Integer... progress) {
+		super.onProgressUpdate(progress);
+		LocalBroadcastManager.getInstance(context).sendBroadcastSync(wrapIntent(
+				ViewerActivity.VA_START_FILE_READ, 
+				context.getResources().getString(R.string.reading_file, progress[0])));			
 	}
 	
 	private Integer readFile(File file) {
@@ -41,6 +76,9 @@ public class FileReader extends AsyncTask<File, Integer, Map<String, Object>>{
 		}
 		catch (IOException e) {
 			logger.error("Unable to open " + file.getName() + ".", e);
+			LocalBroadcastManager.getInstance(context).sendBroadcast(wrapIntent(
+					ViewerActivity.VA_SET_STATUS_TEXT, 
+					context.getResources().getString(R.string.err_not_valid_zip_file, file.getAbsolutePath())));			
 			return 0;
 		}
 		
@@ -57,6 +95,9 @@ public class FileReader extends AsyncTask<File, Integer, Map<String, Object>>{
 			return numFiles;
 		} catch (Exception e) {
 			logger.error(e.getMessage(), e);
+			LocalBroadcastManager.getInstance(context).sendBroadcast(wrapIntent(
+					ViewerActivity.VA_SET_STATUS_TEXT, 
+					e.getMessage()));			
 			return 0;
 		}
 		
@@ -74,9 +115,13 @@ public class FileReader extends AsyncTask<File, Integer, Map<String, Object>>{
 	public File getFile() {
 		return file;
 	}
+	
+	public Map<String, Object> getEntries() {
+		return zipEntries;
+	}
 
 	private void postBuildStructure() {
-		Map<String, Object> parent = zipStructure;
+		Map<String, Object> parent = zipEntries;
 		amendStructure(parent);
 	}
 
@@ -97,7 +142,7 @@ public class FileReader extends AsyncTask<File, Integer, Map<String, Object>>{
 			isFile = false;
 		String[] paths = name.split("/");
 		
-		Map<String, Object> parent = zipStructure;
+		Map<String, Object> parent = zipEntries;
 		for (int i=0; i<paths.length-1; i++) {
 			if (parent.containsKey(paths[i])) {
 				parent = (Map<String, Object>)parent.get(paths[i]); 
@@ -110,6 +155,13 @@ public class FileReader extends AsyncTask<File, Integer, Map<String, Object>>{
 		}
 		if (isFile)
 			parent.put(paths[paths.length-1], entry);
+	}
+
+	private Intent wrapIntent(String action, String data) {
+		Intent intent = new Intent(context, ViewerActivity.class);
+		intent.setAction(action);
+		intent.putExtra("data", data);
+		return intent;
 	}
 
 	public void closeFile() {

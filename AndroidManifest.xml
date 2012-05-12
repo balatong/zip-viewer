@@ -2,7 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.balatong.zip"
     android:versionCode="3"
-    android:versionName="0.9.1" >
+    android:versionName="0.9.2" >
 
     <uses-sdk android:minSdkVersion="8" />
 
@@ -19,21 +19,28 @@
     <application
         android:icon="@drawable/ic_launcher"
         android:label="@string/app_name" >
+        <service 
+            android:name=".loader.LoaderService" >
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <data android:scheme="file" android:mimeType="application/zip"/>
+            </intent-filter>
+        </service>
+
         <activity
             android:name=".viewer.ViewerActivity"
-            android:configChanges="orientation|keyboardHidden"
             android:label="@string/app_name"
-            android:screenOrientation="portrait" >
+            android:configChanges="orientation|keyboardHidden"
+            android:screenOrientation="portrait" 
+            >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
-                <!-- data android:mimeType="application/zip"/ -->
             </intent-filter>
         </activity>
         <activity
             android:name="com.google.ads.AdActivity"
-            android:configChanges="keyboard|keyboardHidden|orientation|screenLayout|uiMode|screenSize|smallestScreenSize"/>
+            android:configChanges="keyboard|keyboardHidden|orientation|screenLayout|uiMode|screenSize|smallestScreenSize" />
     </application>
 
 </manifest>

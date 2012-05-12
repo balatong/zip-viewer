@@ -23,6 +23,7 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.CheckBox;
+import android.widget.CompoundButton;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.ListView;
@@ -35,6 +36,8 @@ public class ContentsAdapter extends ArrayAdapter<String> implements AdapterView
 	private List<String> orderedList = new ArrayList<String>();
 	private Map<String, Object> source;
 	private ListView listView;
+	private String currentDirectory = "";
+	private List<Integer> checkedItems = new ArrayList<Integer>();
 	
 	public ContentsAdapter(Context context, ListView listView) {
 		super(context, 0);
@@ -47,6 +50,7 @@ public class ContentsAdapter extends ArrayAdapter<String> implements AdapterView
 
 		this.source = source;
 		
+		checkedItems.clear();
 		orderedList.clear();
 		orderedList.addAll(source.keySet());
 		Collections.sort(orderedList, new Comparator<String>() {
@@ -70,35 +74,49 @@ public class ContentsAdapter extends ArrayAdapter<String> implements AdapterView
 		
 		for	(String key : orderedList)
 			super.add(key);
+		
+		logger.debug("Source size: " + orderedList.size());
+		logger.debug("View size: " + getCount());
+		logger.debug("List view size: " + listView.getChildCount());
+
 	}
 	
 	public Map<String, Object> getSource() {
 		return source;
 	}
 	
-	public View getView(int position, View convertView, ViewGroup parent) {
-		View view = convertView;
+	public View getView(final int position, View view, ViewGroup parent) {
+//		View view = convertView;
 		if (view == null) {
 			LayoutInflater vi = (LayoutInflater)getContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 			view = vi.inflate(R.layout.zip_entry, null);
 		}
-
 		String key = orderedList.get(position);
 		Object obj = source.get(key);
 		
-//		CheckBox chkBox = new CheckBox(getContext());
-//		chkBox.setId(position);
-//		chkBox.setFocusable(false);
-//		if ("..".equals(key))
-//			chkBox.setEnabled(false);
-//		FrameLayout chkFrame = (FrameLayout)view.findViewById(R.id.frm_chk_item_unzip);
-//		chkFrame.addView(chkBox);
-
 		CheckBox chkBox = (CheckBox)view.findViewById(R.id.chk_item_unzip);
 		chkBox.setFocusable(false);
-		if ("..".equals(key))
+		chkBox.setEnabled(true);
+		chkBox.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+			@Override
+			public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+				if (isChecked && !checkedItems.contains(position))
+					checkedItems.add(position);
+				else if (!isChecked && checkedItems.contains(position))
+					checkedItems.remove(Integer.valueOf(position));
+			}
+		});
+		if (checkedItems.contains(position))
+			chkBox.setChecked(true);
+		else
+			chkBox.setChecked(false);
+		if ("..".equals(key)) {
 			chkBox.setEnabled(false);
-
+			logger.debug("Disabled check box for key: " + key);
+		}
+				
+		logger.debug("getView() for " + key + " at position " + position + "."); 
+		
 		if (obj != null && obj instanceof ZipEntry) {
 			ZipEntry zipEntry = (ZipEntry)obj;
 			ImageView image = (ImageView)view.findViewById(R.id.img_item_icon);
@@ -125,6 +143,7 @@ public class ContentsAdapter extends ArrayAdapter<String> implements AdapterView
 			IllegalStateException e = new IllegalStateException("There should have been an object at position " + position + "."); 
 			logger.error(e.getMessage(), e);
 		}
+
 		return view;
 	}
 	
@@ -136,14 +155,13 @@ public class ContentsAdapter extends ArrayAdapter<String> implements AdapterView
 		if (value instanceof Map) {
 			source = (Map<String, Object>)value;
 			TextView statusView = (TextView)view.getRootView().findViewById(R.id.txt_status_message);
-			String status = statusView.getText().toString();
 			if ("..".equals(key)) {
-				status = status.substring(0, status.lastIndexOf("/"));
+				currentDirectory = currentDirectory.substring(0, currentDirectory.lastIndexOf("/"));
 			}
 			else {
-				status = status + "/" + key;
+				currentDirectory = currentDirectory + "/" + key;
 			}
-			statusView.setText(status);
+			statusView.setText(currentDirectory);
 			this.setSource(source);
 			listView.setAdapter(this);
 		}
@@ -156,30 +174,48 @@ public class ContentsAdapter extends ArrayAdapter<String> implements AdapterView
 	}
 
 	public Map<String, Object> getCheckedItems() {
-		Map<String, Object> checkedItems = new HashMap<String, Object>();
-		for (int i=0; i<listView.getChildCount(); i++) {
-			View v = listView.getChildAt(i);
-			CheckBox chkBox = (CheckBox)v.findViewById(R.id.chk_item_unzip);
-			if (chkBox.isEnabled() && chkBox.isChecked()) {
-				String key = orderedList.get(i);
-				Object value = source.get(key);
-				checkedItems.put(key, value);
-			}
+		Map<String, Object> items = new HashMap<String, Object>();
+		for (Integer position : checkedItems) {
+			String key = orderedList.get(position);
+			Object value = source.get(key);
+			items.put(key, value);
 		}
-		if (checkedItems.size() == 0) {
+		if (items.size() == 0) {
 			logger.debug("Unzipping all files in source.");
-			checkedItems = source;
+			items = source;
 		}
-		return checkedItems;
+		return items;
 	}
 
 	public void uncheckItems() {
-		for (int i=0; i<listView.getChildCount(); i++) {
-			View v = listView.getChildAt(i);
-			CheckBox chkBox = (CheckBox)v.findViewById(R.id.chk_item_unzip);
-			if (chkBox.isEnabled()) 
-				chkBox.setChecked(false);
-		}
+		checkedItems.clear();
 	}
+
+//	public Map<String, Object> getCheckedItems() {
+//		Map<String, Object> checkedItems = new HashMap<String, Object>();
+//		for (int i=0; i<listView.getChildCount(); i++) {
+//			View v = listView.getChildAt(i);
+//			CheckBox chkBox = (CheckBox)v.findViewById(R.id.chk_item_unzip);
+//			if (chkBox.isEnabled() && chkBox.isChecked()) {
+//				String key = orderedList.get(i);
+//				Object value = source.get(key);
+//				checkedItems.put(key, value);
+//			}
+//		}
+//		if (checkedItems.size() == 0) {
+//			logger.debug("Unzipping all files in source.");
+//			checkedItems = source;
+//		}
+//		return checkedItems;
+//	}
+//
+//	public void uncheckItems() {
+//		for (int i=0; i<listView.getChildCount(); i++) {
+//			View v = listView.getChildAt(i);
+//			CheckBox chkBox = (CheckBox)v.findViewById(R.id.chk_item_unzip);
+//			if (chkBox.isEnabled()) 
+//				chkBox.setChecked(false);
+//		}
+//	}
 
 }

@@ -11,15 +11,27 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 import com.balatong.logger.Logger;
+import com.balatong.zip.R;
+import com.balatong.zip.viewer.ViewerActivity;
 
+import android.content.Context;
+import android.content.Intent;
 import android.os.AsyncTask;
+import android.support.v4.content.LocalBroadcastManager;
+import android.widget.ImageButton;
+import android.widget.ProgressBar;
 
 public class ContentsExtractor extends AsyncTask<Object, String, Integer> {
 
 	private Logger logger = Logger.getLogger(ContentsExtractor.class.getName());
 	final private static int MAX_BYTES = 24 * 1024;
 	
+	private Context context;
 	private File file;
+	
+	public ContentsExtractor(Context context) {
+		this.context = context;
+	}
 	
 	public void setFile(File file) {
 		this.file = file;
@@ -32,6 +44,31 @@ public class ContentsExtractor extends AsyncTask<Object, String, Integer> {
 		logger.debug("Elapsed: " + (System.currentTimeMillis() - current) / 1000 + " secs.");
 		return extracted;
 	}
+	
+	@Override
+	protected void onPreExecute() {
+		super.onPreExecute();
+		LocalBroadcastManager.getInstance(context).sendBroadcast(wrapIntent(
+				ViewerActivity.VA_START_CONTENT_EXTRACT, 
+				context.getResources().getString(R.string.extracting_files)));			
+	}
+	
+	@Override
+	protected void onPostExecute(Integer result) {
+		super.onPostExecute(result);
+		LocalBroadcastManager.getInstance(context).sendBroadcast(wrapIntent(
+				ViewerActivity.VA_END_CONTENT_EXTRACT, 
+				context.getResources().getString(R.string.extracted_num_files, result)));			
+	}
+	
+	@Override
+	protected void onProgressUpdate(String... values) {
+		super.onProgressUpdate(values);
+		LocalBroadcastManager.getInstance(context).sendBroadcast(wrapIntent(
+				ViewerActivity.VA_SET_STATUS_TEXT, 
+				context.getResources().getString(R.string.extracting_file, values[0])));			
+	}
+
 
 	public Integer unzipContents(Map<String, Object> zipEntries, String extractPath) {
 		logger.debug("Extracting to: " + extractPath);		
@@ -95,6 +132,13 @@ public class ContentsExtractor extends AsyncTask<Object, String, Integer> {
 		//bos.close();
 		//bis.close();
 		logger.debug("Written to file: " + extractPath + "/" + key + ".");
+	}
+
+	private Intent wrapIntent(String action, String data) {
+		Intent intent = new Intent(context, ViewerActivity.class);
+		intent.setAction(action);
+		intent.putExtra("data", data);
+		return intent;
 	}
 
 }

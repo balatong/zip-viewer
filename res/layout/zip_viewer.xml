@@ -1,92 +1,108 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/lib/com.google.ads"
+    android:id="@+id/RelativeLayout1"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
     android:orientation="vertical" >
 
-    <com.google.ads.AdView xmlns:ads="http://schemas.android.com/apk/lib/com.google.ads"
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="fill_parent"
+        android:layout_above="@+id/adView"
+        android:orientation="vertical" >
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" >
+
+            <ImageButton
+                android:id="@+id/img_btn_menu_open"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/ic_menu_folder_open" />
+
+            <ImageButton
+                android:id="@+id/img_btn_menu_unzip"
+                style="@android:style/Widget.ImageButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/ic_menu_unzip"
+                android:tag="@string/menu_extract" />
+
+            <ImageButton
+                android:id="@+id/img_btn_menu_check"
+                style="@android:style/Widget.ImageButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/ic_menu_check"
+                android:tag="@string/menu_test" />
+
+            <ImageButton
+                android:id="@+id/img_btn_menu_add"
+                style="@android:style/Widget.ImageButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/ic_menu_add"
+                android:tag="@string/menu_add" />
+
+            <ImageButton
+                android:id="@+id/img_btn_menu_delete"
+                style="@android:style/Widget.ImageButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/ic_menu_delete"
+                android:tag="@string/menu_delete" />
+
+            <ImageButton
+                android:id="@+id/img_btn_menu_info"
+                style="@android:style/Widget.ImageButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/ic_menu_info"
+                android:tag="@string/menu_info" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" >
+
+            <ProgressBar
+                android:id="@+id/pbar_status_activity"
+                style="?android:attr/progressBarStyleSmall"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="5dp"
+                android:layout_marginRight="5dp"
+                android:visibility="invisible" />
+
+            <TextView
+                android:id="@+id/txt_status_message"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+        </LinearLayout>
+
+        <ListView
+            android:id="@+id/list_directory_contents"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="1dp" >
+        </ListView>
+
+    </LinearLayout>
+
+    <com.google.ads.AdView
+        xmlns:ads="http://schemas.android.com/apk/lib/com.google.ads"
         android:id="@+id/adView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        ads:adSize="BANNER"
-        ads:adUnitId="a14faab47fdad40"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
         ads:loadAdOnCreate="true"
-        ads:testDevices="2286471D9A5BF5827F78684F69DD5A26" />
-    
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content" >
+        ads:testDevices="2286471D9A5BF5827F78684F69DD5A26"
+        app:adSize="BANNER"
+        app:adUnitId="a14faab47fdad40" >
 
-        <ImageButton
-            android:id="@+id/img_btn_menu_open"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:src="@drawable/ic_menu_folder_open" />
+    </com.google.ads.AdView>
 
-        <ImageButton
-            android:id="@+id/img_btn_menu_unzip"
-            style="@android:style/Widget.ImageButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:src="@drawable/ic_menu_unzip"
-            android:tag="@string/menu_extract" />
-
-        <ImageButton
-            android:id="@+id/img_btn_menu_check"
-            style="@android:style/Widget.ImageButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:src="@drawable/ic_menu_check"
-            android:tag="@string/menu_test" />
-
-        <ImageButton
-            android:id="@+id/img_btn_menu_add"
-            style="@android:style/Widget.ImageButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:src="@drawable/ic_menu_add"
-            android:tag="@string/menu_add" />
-
-        <ImageButton
-            android:id="@+id/img_btn_menu_delete"
-            style="@android:style/Widget.ImageButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:src="@drawable/ic_menu_delete"
-            android:tag="@string/menu_delete" />
-
-        <ImageButton
-            android:id="@+id/img_btn_menu_info"
-            style="@android:style/Widget.ImageButton"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:src="@drawable/ic_menu_info"
-            android:tag="@string/menu_info" />
-    </LinearLayout>
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content" >
-
-        <ProgressBar
-            android:id="@+id/pbar_status_activity"
-            style="?android:attr/progressBarStyleSmall"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginLeft="5dp"
-            android:layout_marginRight="5dp"
-            android:visibility="invisible" />
-
-        <TextView
-            android:id="@+id/txt_status_message"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
-    </LinearLayout>
-
-    <ListView
-        android:id="@+id/list_directory_contents"
-        android:layout_width="match_parent"
-        android:layout_height="fill_parent" >
-    </ListView>
-
-</LinearLayout>
+</RelativeLayout>

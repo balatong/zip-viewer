@@ -8,6 +8,7 @@
     <string name="menu_copy">Copy</string>
     <string name="menu_delete">Delete</string>
     <string name="menu_info">Info</string>
+    <string name="select_file_to_load">Select a file to load.</string>
     <string name="reading_file">Reading %d file(s).</string>
     <string name="extract_to_directory">Extract file(s):</string>
     <string name="extracting_file">Extracting file: %s...</string>
