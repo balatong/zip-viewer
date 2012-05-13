@@ -1,6 +1,11 @@
 package com.balatong.zip.viewer;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStream;
+import java.security.DigestInputStream;
+import java.security.MessageDigest;
+import java.text.SimpleDateFormat;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -29,7 +34,9 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
+import android.os.Message;
 import android.support.v4.content.LocalBroadcastManager;
+import android.text.Layout;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.AdapterView;
@@ -37,6 +44,7 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.RemoteViews.ActionException;
@@ -53,7 +61,7 @@ public class ViewerActivity extends BaseActivity {
 	public static final String VA_START_CONTENT_EXTRACT = "com.balatong.zip.viewer.VA_START_CONTENT_EXTRACT";
 	public static final String VA_END_CONTENT_EXTRACT =   "com.balatong.zip.viewer.VA_END_CONTENT_EXTRACT";
 	
-	private File file;
+//	private File file;
 	private ContentsAdapter zipContentsAdapter;
 
 	private ProgressBar activityBar;
@@ -61,7 +69,7 @@ public class ViewerActivity extends BaseActivity {
 	private ListView directoryContents; 
 	
 	private ServiceConnection connection;
-	private LoaderService.LoaderBinder fBinder;
+	private LoaderService.LoaderBinder loader;
 	
 	private boolean receiversRegistered;
 	private boolean isBound;
@@ -69,7 +77,7 @@ public class ViewerActivity extends BaseActivity {
 	@Override
 	public void onCreate(final Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		setContentView(R.layout.zip_viewer);
+		setContentView(R.layout.zip_viewer_activity);
 		
 		activityBar = (ProgressBar)findViewById(R.id.pbar_status_activity);
 		statusBar = (TextView)findViewById(R.id.txt_status_message);
@@ -81,12 +89,12 @@ public class ViewerActivity extends BaseActivity {
 		connection = new ServiceConnection() {
 			@Override
 			public void onServiceDisconnected(ComponentName name) {
-				fBinder.closeZipFile();
+				loader.closeZipFile();
 				isBound = false;
 			}
 			@Override
 			public void onServiceConnected(ComponentName name, IBinder service) {
-				fBinder = (LoaderService.LoaderBinder)service;
+				loader = (LoaderService.LoaderBinder)service;
 				isBound = true;
 				ImageButton menuOpen = (ImageButton)findViewById(R.id.img_btn_menu_open);
 				menuOpen.setEnabled(true);
@@ -114,7 +122,7 @@ public class ViewerActivity extends BaseActivity {
 		case 0:
 			if (resultCode == RESULT_OK) {
 				if (isBound) { 
-					file = fBinder.readZipFile(intent);
+					loader.readZipFile(intent);
 					ImageButton menuOpen = (ImageButton)findViewById(R.id.img_btn_menu_open);
 					menuOpen.setEnabled(false);
 					toggleMenus(false);
@@ -150,17 +158,17 @@ public class ViewerActivity extends BaseActivity {
 			@Override
 			public void onClick(View v) {
 				LayoutInflater inflater = getLayoutInflater();
-				final View viewExtractPath = inflater.inflate(R.layout.extract_path, null);
+				final View viewExtractPath = inflater.inflate(R.layout.extract_path_dialog, null);
 				
 				AlertDialog.Builder builder = new AlertDialog.Builder(v.getContext());
-				builder.setTitle(v.getContext().getText(R.string.extract_to_directory));
+				builder.setTitle(v.getContext().getText(R.string.title_extract_files));
 				builder.setView(viewExtractPath);
 				builder.setPositiveButton(android.R.string.ok, new AlertDialog.OnClickListener() {
 					public void onClick(DialogInterface dialog, int which) {
 						final String extractPath = ((EditText)viewExtractPath.findViewById(R.id.txt_extract_path)).getText().toString();
 						final Map<String, Object> zipEntries = zipContentsAdapter.getCheckedItems();
 						ContentsExtractor extractor = new ContentsExtractor(ViewerActivity.this);
-						extractor.setFile(fBinder.getFile());
+						extractor.setFile(loader.getFile());
 						extractor.execute(zipEntries, extractPath);
 					}
 				});
@@ -216,12 +224,78 @@ public class ViewerActivity extends BaseActivity {
 		menuInfo.setOnClickListener(new View.OnClickListener() {
 			@Override
 			public void onClick(View v) {
+				LayoutInflater inflater = getLayoutInflater();
+				final View infoView = inflater.inflate(R.layout.file_info_dialog, null);
+				
+				File file = loader.getFile();
+				TextView tView = (TextView)infoView.findViewById(R.id.txt_name);
+				tView.setText(file.getName());
+				tView = (TextView)infoView.findViewById(R.id.txt_path);
+				tView.setText(file.getParent());
+				tView = (TextView)infoView.findViewById(R.id.txt_size);
+				tView.setText(file.length() / 1024 + " KB");
+				tView = (TextView)infoView.findViewById(R.id.txt_modified);
+				tView.setText(new SimpleDateFormat().format(file.lastModified()));
+				
+				
+				final LinearLayout view = (LinearLayout)infoView.findViewById(R.id.txt_md5);
+				ProgressBar pBar = new ProgressBar(ViewerActivity.this);
+				pBar.setIndeterminate(true);
+				view.removeAllViews();
+				view.addView(pBar);
+				
+				new AsyncTask<File, Void, String>(){
+					@Override
+					protected String doInBackground(File... params) {
+						File file = params[0];
+						MessageDigest md = null;
+						InputStream is = null;
+						DigestInputStream dis = null;
+						try {
+							md = MessageDigest.getInstance("MD5");
+							is = new FileInputStream(file);
+							dis = new DigestInputStream(is, md);
+							
+							byte buffer[] = new byte[24 * 1024];
+							while (dis.read(buffer) > 0);
+							
+							StringBuilder md5 = new StringBuilder();
+							for (byte b : md.digest()) {
+								String hex = Integer.toHexString(0xFF & b);
+								if (hex.length()==2) 
+									md5.append(hex);
+								else 
+									md5.append("0" + hex);
+								logger.debug(hex);
+							}
+							return md5.toString();
+						}
+						catch (Exception e) {
+							return "Unable to read md5sum.";
+						}
+						finally {
+							try {
+								is.close();
+								dis.close();
+							}
+							catch (Exception e) {
+							}
+						}
+					}
+					@Override
+					protected void onPostExecute(String result) {
+						TextView md5View = new TextView(ViewerActivity.this);
+						md5View.setText(result);
+						view.removeAllViews();
+						view.addView(md5View);
+					}
+				}.execute(file);
+				
 				AlertDialog.Builder builder = new AlertDialog.Builder(v.getContext());
-				builder.setTitle(v.getContext().getText(R.string.warn_not_yet_implemented));
-				builder.setMessage(v.getContext().getText(R.string.info_available_in_paid_version));
+				builder.setTitle(v.getContext().getText(R.string.title_file_info));
 				builder.setPositiveButton(android.R.string.ok, null);
+				builder.setView(infoView);
 				builder.create().show();
-//				reader.showFileInfo();
 			}
 		});		
 	}
@@ -267,7 +341,7 @@ public class ViewerActivity extends BaseActivity {
 				activityBar.setVisibility(ProgressBar.INVISIBLE);
 				statusBar.setText(data);
 
-				zipContentsAdapter.setSource(fBinder.getResult());
+				zipContentsAdapter.setSource(loader.getResult());
 				directoryContents.setAdapter(zipContentsAdapter);
 			}
 			else if (VA_START_CONTENT_EXTRACT.equals(action)) {

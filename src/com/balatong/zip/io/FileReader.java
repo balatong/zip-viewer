@@ -136,7 +136,7 @@ public class FileReader extends AsyncTask<File, Integer, Map<String, Object>>{
 
 	private void buildStructure(ZipEntry entry) {
 		String name = entry.getName();
-		logger.debug("Reading entry: " + name);
+//		logger.debug("Reading N:" + name + " S:" + entry.getSize() + " CS:" + entry.getCompressedSize() + " T:" + entry.getTime());
 		boolean isFile = true;
 		if (name.endsWith("/"))
 			isFile = false;

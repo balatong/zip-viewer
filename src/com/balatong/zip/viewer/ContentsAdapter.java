@@ -89,7 +89,7 @@ public class ContentsAdapter extends ArrayAdapter<String> implements AdapterView
 //		View view = convertView;
 		if (view == null) {
 			LayoutInflater vi = (LayoutInflater)getContext().getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-			view = vi.inflate(R.layout.zip_entry, null);
+			view = vi.inflate(R.layout.zip_entry_item, null);
 		}
 		String key = orderedList.get(position);
 		Object obj = source.get(key);
@@ -115,7 +115,7 @@ public class ContentsAdapter extends ArrayAdapter<String> implements AdapterView
 			logger.debug("Disabled check box for key: " + key);
 		}
 				
-		logger.debug("getView() for " + key + " at position " + position + "."); 
+//		logger.debug("getView() for " + key + " at position " + position + "."); 
 		
 		if (obj != null && obj instanceof ZipEntry) {
 			ZipEntry zipEntry = (ZipEntry)obj;
@@ -190,32 +190,5 @@ public class ContentsAdapter extends ArrayAdapter<String> implements AdapterView
 	public void uncheckItems() {
 		checkedItems.clear();
 	}
-
-//	public Map<String, Object> getCheckedItems() {
-//		Map<String, Object> checkedItems = new HashMap<String, Object>();
-//		for (int i=0; i<listView.getChildCount(); i++) {
-//			View v = listView.getChildAt(i);
-//			CheckBox chkBox = (CheckBox)v.findViewById(R.id.chk_item_unzip);
-//			if (chkBox.isEnabled() && chkBox.isChecked()) {
-//				String key = orderedList.get(i);
-//				Object value = source.get(key);
-//				checkedItems.put(key, value);
-//			}
-//		}
-//		if (checkedItems.size() == 0) {
-//			logger.debug("Unzipping all files in source.");
-//			checkedItems = source;
-//		}
-//		return checkedItems;
-//	}
-//
-//	public void uncheckItems() {
-//		for (int i=0; i<listView.getChildCount(); i++) {
-//			View v = listView.getChildAt(i);
-//			CheckBox chkBox = (CheckBox)v.findViewById(R.id.chk_item_unzip);
-//			if (chkBox.isEnabled()) 
-//				chkBox.setChecked(false);
-//		}
-//	}
 
 }

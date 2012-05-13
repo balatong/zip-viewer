@@ -1,6 +1,7 @@
 package com.balatong.zip.loader;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.util.Map;
 
 import com.balatong.BaseService;
