@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.balatong.zip"
-    android:versionCode="3"
-    android:versionName="0.9.2" >
+    android:versionCode="4"
+    android:versionName="0.9.3" >
 
     <uses-sdk android:minSdkVersion="8" />
 
@@ -10,7 +10,9 @@
         android:anyDensity="true"
         android:largeScreens="true"
         android:normalScreens="true"
-        android:xlargeScreens="true" />
+        android:xlargeScreens="true" 
+        android:smallScreens="true" 
+        android:resizeable="true"/>
 
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.INTERNET" />
@@ -38,6 +40,11 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data android:mimeType="application/zip" android:scheme="file" />
+                <data android:mimeType="application/rar" android:scheme="file" />
+                <data android:mimeType="application/tar" android:scheme="file" />
+                <data android:mimeType="application/jar" android:scheme="file" />
+                <data android:mimeType="application/war" android:scheme="file" />
+                <data android:mimeType="application/ear" android:scheme="file" />
             </intent-filter>
         </activity>
         
