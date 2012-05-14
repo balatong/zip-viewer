@@ -15,6 +15,7 @@ import com.balatong.BaseActivity;
 import com.balatong.logger.Logger;
 import com.balatong.zip.R;
 import com.balatong.zip.io.ContentsExtractor;
+import com.balatong.zip.io.DigestExtractor;
 import com.balatong.zip.io.FileReader;
 import com.balatong.zip.loader.LoaderService;
 
@@ -60,13 +61,18 @@ public class ViewerActivity extends BaseActivity {
 	public static final String VA_END_FILE_READ = 	"com.balatong.zip.viewer.VA_END_FILE_READ";
 	public static final String VA_START_CONTENT_EXTRACT = "com.balatong.zip.viewer.VA_START_CONTENT_EXTRACT";
 	public static final String VA_END_CONTENT_EXTRACT =   "com.balatong.zip.viewer.VA_END_CONTENT_EXTRACT";
+	public static final String VA_SHOW_FILE_CHECKSUMS = "com.balatong.zip.viewer.VA_SHOW_FILE_CHECKSUMS";
+	public static final String VA_SHOW_PROGRESS_INFO = "com.balatong.zip.viewer.VA_SHOW_PROGRESS_INFO";
+	public static final String VA_SHOW_NEW_PROGRESS_INFO = "com.balatong.zip.viewer.VA_SHOW_NEW_PROGRESS_INFO";
 	
 //	private File file;
 	private ContentsAdapter zipContentsAdapter;
 
 	private ProgressBar activityBar;
 	private TextView statusBar;
-	private ListView directoryContents; 
+	private ListView directoryContents;
+	private View infoView;
+	private View progressView;
 	
 	private ServiceConnection connection;
 	private LoaderService.LoaderBinder loader;
@@ -140,6 +146,11 @@ public class ViewerActivity extends BaseActivity {
 			public void onClick(View v) {
 				Intent intent = new Intent(Intent.ACTION_GET_CONTENT); 
 		        intent.setType("*/zip"); 
+		        intent.setType("*/rar"); 
+		        intent.setType("*/tar"); 
+		        intent.setType("*/jar"); 
+		        intent.setType("*/war"); 
+		        intent.setType("*/ear"); 
 		        intent.addCategory(Intent.CATEGORY_OPENABLE);
 		        try {
 		            startActivityForResult(Intent.createChooser(intent, null), 0);
@@ -165,11 +176,17 @@ public class ViewerActivity extends BaseActivity {
 				builder.setView(viewExtractPath);
 				builder.setPositiveButton(android.R.string.ok, new AlertDialog.OnClickListener() {
 					public void onClick(DialogInterface dialog, int which) {
-						final String extractPath = ((EditText)viewExtractPath.findViewById(R.id.txt_extract_path)).getText().toString();
-						final Map<String, Object> zipEntries = zipContentsAdapter.getCheckedItems();
-						ContentsExtractor extractor = new ContentsExtractor(ViewerActivity.this);
-						extractor.setFile(loader.getFile());
-						extractor.execute(zipEntries, extractPath);
+						switch (which) {
+						case AlertDialog.BUTTON_POSITIVE:
+							String extractPath = ((EditText)viewExtractPath.findViewById(R.id.txt_extract_path)).getText().toString();
+							Map<String, Object> zipEntries = zipContentsAdapter.getCheckedItems();
+							ContentsExtractor extractor = new ContentsExtractor(ViewerActivity.this);
+							extractor.setFile(loader.getFile());
+							extractor.execute(zipEntries, extractPath);
+							break;
+						default:
+							break;
+						}
 					}
 				});
 				builder.setNeutralButton(android.R.string.cancel, null);
@@ -225,7 +242,7 @@ public class ViewerActivity extends BaseActivity {
 			@Override
 			public void onClick(View v) {
 				LayoutInflater inflater = getLayoutInflater();
-				final View infoView = inflater.inflate(R.layout.file_info_dialog, null);
+				infoView = inflater.inflate(R.layout.file_info_dialog, null);
 				
 				File file = loader.getFile();
 				TextView tView = (TextView)infoView.findViewById(R.id.txt_name);
@@ -237,65 +254,26 @@ public class ViewerActivity extends BaseActivity {
 				tView = (TextView)infoView.findViewById(R.id.txt_modified);
 				tView.setText(new SimpleDateFormat().format(file.lastModified()));
 				
-				
-				final LinearLayout view = (LinearLayout)infoView.findViewById(R.id.txt_md5);
 				ProgressBar pBar = new ProgressBar(ViewerActivity.this);
 				pBar.setIndeterminate(true);
+				LinearLayout view = (LinearLayout)infoView.findViewById(R.id.txt_md5);
 				view.removeAllViews();
 				view.addView(pBar);
 				
-				new AsyncTask<File, Void, String>(){
-					@Override
-					protected String doInBackground(File... params) {
-						File file = params[0];
-						MessageDigest md = null;
-						InputStream is = null;
-						DigestInputStream dis = null;
-						try {
-							md = MessageDigest.getInstance("MD5");
-							is = new FileInputStream(file);
-							dis = new DigestInputStream(is, md);
-							
-							byte buffer[] = new byte[24 * 1024];
-							while (dis.read(buffer) > 0);
-							
-							StringBuilder md5 = new StringBuilder();
-							for (byte b : md.digest()) {
-								String hex = Integer.toHexString(0xFF & b);
-								if (hex.length()==2) 
-									md5.append(hex);
-								else 
-									md5.append("0" + hex);
-								logger.debug(hex);
-							}
-							return md5.toString();
-						}
-						catch (Exception e) {
-							return "Unable to read md5sum.";
-						}
-						finally {
-							try {
-								is.close();
-								dis.close();
-							}
-							catch (Exception e) {
-							}
-						}
-					}
-					@Override
-					protected void onPostExecute(String result) {
-						TextView md5View = new TextView(ViewerActivity.this);
-						md5View.setText(result);
-						view.removeAllViews();
-						view.addView(md5View);
-					}
-				}.execute(file);
+				pBar = new ProgressBar(ViewerActivity.this);
+				pBar.setIndeterminate(true);
+				view = (LinearLayout)infoView.findViewById(R.id.txt_sha1);
+				view.removeAllViews();
+				view.addView(pBar);
 				
 				AlertDialog.Builder builder = new AlertDialog.Builder(v.getContext());
 				builder.setTitle(v.getContext().getText(R.string.title_file_info));
 				builder.setPositiveButton(android.R.string.ok, null);
 				builder.setView(infoView);
 				builder.create().show();
+				
+				DigestExtractor digest = new DigestExtractor(ViewerActivity.this);
+				digest.execute(file);
 			}
 		});		
 	}
@@ -353,6 +331,51 @@ public class ViewerActivity extends BaseActivity {
 				activityBar.setVisibility(ProgressBar.VISIBLE);
 				statusBar.setText(data);
 			}
+			else if (VA_SHOW_NEW_PROGRESS_INFO.equals(action)) {
+				ProgressBar pbarSelectedEntries = null;
+				ProgressBar pbarEntry = null;
+				
+				if (progressView == null) {
+					LayoutInflater inflater = getLayoutInflater();
+					progressView = inflater.inflate(R.layout.extract_entries_dialog, null);
+
+					pbarSelectedEntries = (ProgressBar)progressView.findViewById(R.id.pbar_selected_entries);
+					pbarSelectedEntries.setMax(Integer.parseInt(intent.getExtras().getString("totalFiles")));
+					pbarSelectedEntries.setProgress(0);
+					
+					pbarEntry = (ProgressBar)progressView.findViewById(R.id.pbar_zip_entry);
+					pbarEntry.setMax(Integer.parseInt(intent.getExtras().getString("entrySize")));
+					pbarEntry.setProgress(0);
+
+					AlertDialog.Builder builder = new AlertDialog.Builder(ViewerActivity.this);
+					builder.setTitle(getText(R.string.title_extract_files));
+					builder.setView(progressView);
+					builder.setNegativeButton(android.R.string.cancel, new AlertDialog.OnClickListener() {
+						public void onClick(DialogInterface dialog, int which) {
+							switch (which) {
+							case AlertDialog.BUTTON_NEGATIVE:
+								break;
+							default:
+								break;
+							}
+						}
+					});
+					builder.create().show();
+				}
+				else {
+					pbarSelectedEntries = (ProgressBar)progressView.findViewById(R.id.pbar_selected_entries);
+					pbarSelectedEntries.incrementProgressBy(1);
+					
+					pbarEntry = (ProgressBar)progressView.findViewById(R.id.pbar_zip_entry);
+					pbarEntry.setMax(Integer.parseInt(intent.getExtras().getString("entrySize")));
+					pbarEntry.setProgress(0);
+				}
+				
+			}
+			else if (VA_SHOW_PROGRESS_INFO.equals(action)) {
+				ProgressBar pbarEntry = (ProgressBar)progressView.findViewById(R.id.pbar_zip_entry);
+				pbarEntry.incrementProgressBy(Integer.parseInt(intent.getExtras().getString("entryExtracted")));				
+			}
 			else if (VA_END_CONTENT_EXTRACT.equals(action)) {
 				ImageButton menuOpen = (ImageButton)findViewById(R.id.img_btn_menu_open);
 				menuOpen.setEnabled(true);
@@ -362,6 +385,21 @@ public class ViewerActivity extends BaseActivity {
 				statusBar.setText(data);
 				
 				zipContentsAdapter.uncheckItems();
+			}
+			else if (VA_SHOW_FILE_CHECKSUMS.equals(action)) {
+				String md5 = intent.getExtras().getString("MD5");
+				LinearLayout view = (LinearLayout)infoView.findViewById(R.id.txt_md5);
+				TextView md5View = new TextView(ViewerActivity.this);
+				md5View.setText(md5);
+				view.removeAllViews();
+				view.addView(md5View);
+
+				String sha1 = intent.getExtras().getString("SHA1");
+				view = (LinearLayout)infoView.findViewById(R.id.txt_sha1);
+				TextView sha1View = new TextView(ViewerActivity.this);
+				sha1View.setText(sha1);
+				view.removeAllViews();
+				view.addView(sha1View); 
 			}
 			
 		}
@@ -376,10 +414,13 @@ public class ViewerActivity extends BaseActivity {
 		intentFilter.addAction(VA_END_FILE_READ);
 		intentFilter.addAction(VA_START_CONTENT_EXTRACT);
 		intentFilter.addAction(VA_END_CONTENT_EXTRACT);
+		intentFilter.addAction(VA_SHOW_NEW_PROGRESS_INFO);
+		intentFilter.addAction(VA_SHOW_PROGRESS_INFO);
+		intentFilter.addAction(VA_SHOW_FILE_CHECKSUMS);
 		LocalBroadcastManager.getInstance(ViewerActivity.this).registerReceiver(intentReceiver, intentFilter);
 		receiversRegistered = true;
 	}
-
+	
 	@Override
 	public void onPause() {
 		super.onPause();
@@ -404,6 +445,6 @@ public class ViewerActivity extends BaseActivity {
 			stopService(service);
 			isBound = false;
 		}
-	}
+	} 
 
 }

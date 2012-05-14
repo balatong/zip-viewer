@@ -17,7 +17,8 @@
     <string name="label_csize">Compressed Size: </string>
     <string name="label_crc">CRC: </string>
     <string name="label_md5">MD5: </string>
-
+    <string name="label_sha1">SHA1: </string>
+    
     <string name="title_extract_files">Extract File(s)</string>
     <string name="title_file_info">File Info</string>
     

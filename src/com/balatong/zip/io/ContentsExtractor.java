@@ -1,7 +1,5 @@
 package com.balatong.zip.io;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -18,23 +16,20 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.support.v4.content.LocalBroadcastManager;
-import android.widget.ImageButton;
-import android.widget.ProgressBar;
 
 public class ContentsExtractor extends AsyncTask<Object, String, Integer> {
 
 	private Logger logger = Logger.getLogger(ContentsExtractor.class.getName());
 	final private static int MAX_BYTES = 24 * 1024;
-	
+
 	private Context context;
 	private File file;
+
+	private int numToBeExtracted = 0;
+	private long totalSizeToBeExtracted = 0;	
 	
 	public ContentsExtractor(Context context) {
 		this.context = context;
-	}
-	
-	public void setFile(File file) {
-		this.file = file;
 	}
 	
 	@Override
@@ -50,7 +45,7 @@ public class ContentsExtractor extends AsyncTask<Object, String, Integer> {
 		super.onPreExecute();
 		LocalBroadcastManager.getInstance(context).sendBroadcast(wrapIntent(
 				ViewerActivity.VA_START_CONTENT_EXTRACT, 
-				context.getResources().getString(R.string.extracting_files)));			
+				"data", context.getResources().getString(R.string.extracting_files)));			
 	}
 	
 	@Override
@@ -58,20 +53,28 @@ public class ContentsExtractor extends AsyncTask<Object, String, Integer> {
 		super.onPostExecute(result);
 		LocalBroadcastManager.getInstance(context).sendBroadcast(wrapIntent(
 				ViewerActivity.VA_END_CONTENT_EXTRACT, 
-				context.getResources().getString(R.string.extracted_num_files, result)));			
+				"data", context.getResources().getString(R.string.extracted_num_files, result)));			
 	}
 	
 	@Override
 	protected void onProgressUpdate(String... values) {
 		super.onProgressUpdate(values);
 		LocalBroadcastManager.getInstance(context).sendBroadcast(wrapIntent(
-				ViewerActivity.VA_SET_STATUS_TEXT, 
-				context.getResources().getString(R.string.extracting_file, values[0])));			
+				"NEW_ENTRY".equals(values[0]) ? ViewerActivity.VA_SHOW_NEW_PROGRESS_INFO :
+												ViewerActivity.VA_SHOW_PROGRESS_INFO, 
+				"name", values[1],
+				"entrySize", values[2],
+				"entryExtracted", values[3],
+				"totalFiles", values[4],
+				"totalSize", values[5]));			
 	}
 
 
 	public Integer unzipContents(Map<String, Object> zipEntries, String extractPath) {
-		logger.debug("Extracting to: " + extractPath);		
+		logger.debug("Retrieving stats.");
+		retrieveStats(zipEntries);
+		
+		logger.debug("Extracting to: " + extractPath);
 		ZipFile zipFile = null;
 		Integer extracted = 0;
 		try {
@@ -92,6 +95,19 @@ public class ContentsExtractor extends AsyncTask<Object, String, Integer> {
 		}
 	}
 
+	private void retrieveStats(Map<String, Object> zipEntries) {
+		for (Map.Entry<String, Object> entry : zipEntries.entrySet()) {
+			if(!"..".equals(entry.getKey()) && entry.getValue() instanceof Map )
+				retrieveStats((Map<String, Object>)entry.getValue());
+			else if (entry.getValue() instanceof ZipEntry){
+				ZipEntry zipEntry = (ZipEntry)entry.getValue();
+				numToBeExtracted++;
+				totalSizeToBeExtracted += zipEntry.getSize();
+			}
+		}
+		
+	}
+
 	private Integer extractContents(Map<String, Object> zipEntries, ZipFile zipFile, String extractPath) throws IOException {
 		File path = new File(extractPath);
 		if (!path.exists())
@@ -104,9 +120,14 @@ public class ContentsExtractor extends AsyncTask<Object, String, Integer> {
 		int extracted = 0;
 		for (Map.Entry<String, Object> entry : zipEntries.entrySet()) {
 			if (entry.getValue() instanceof ZipEntry) {
-				publishProgress(entry.getKey());
+				
+				publishProgress("NEW_ENTRY", 
+						entry.getKey(), 
+						((ZipEntry)entry.getValue()).getSize() + "", "0",
+						getNumToBeExtracted() + "", getTotalSizeToBeExtracted() + "" );
+				
 				InputStream is = zipFile.getInputStream((ZipEntry)entry.getValue());
-				writeFile(entry.getKey(), is, extractPath);
+				writeFile(entry.getKey(), (ZipEntry)entry.getValue(), is, extractPath);
 				is.close();
 				extracted++;
 			}
@@ -119,26 +140,43 @@ public class ContentsExtractor extends AsyncTask<Object, String, Integer> {
 		return extracted;
 	}
 
-	private void writeFile(String key, InputStream is, String extractPath) throws IOException {
-		//BufferedInputStream bis = new BufferedInputStream(is);
+	private void writeFile(String key, ZipEntry entry, InputStream is, String extractPath) throws IOException {
 		FileOutputStream fos = new FileOutputStream(extractPath + "/" + key);
-		//BufferedOutputStream bos = new BufferedOutputStream(fos);
 		byte[] buffer = new byte[MAX_BYTES];
 		int count = 0;
+		int extracted = 0;
 		while ((count = is.read(buffer, 0, MAX_BYTES)) > 0) {
 			fos.write(buffer, 0, count);
+			extracted += count;
+			
+			publishProgress("OLD_ENTRY", 
+					key, 
+					entry.getSize() + "", extracted + "", 
+					getNumToBeExtracted() + "", getTotalSizeToBeExtracted() + "" );
 		}
 		fos.close();
-		//bos.close();
-		//bis.close();
 		logger.debug("Written to file: " + extractPath + "/" + key + ".");
 	}
 
-	private Intent wrapIntent(String action, String data) {
+	public void setFile(File file) {
+		this.file = file;
+	}
+	
+	public int getNumToBeExtracted() {
+		return numToBeExtracted;
+	}
+
+	public long getTotalSizeToBeExtracted() {
+		return totalSizeToBeExtracted;
+	}
+
+	private Intent wrapIntent(String action, String... keyVals) {
 		Intent intent = new Intent(context, ViewerActivity.class);
 		intent.setAction(action);
-		intent.putExtra("data", data);
+		for (int i=0; i<(keyVals.length/2); i++) 
+			intent.putExtra(keyVals[(2*i)], keyVals[(2*i)+1]);
 		return intent;
 	}
 
+	
 }
