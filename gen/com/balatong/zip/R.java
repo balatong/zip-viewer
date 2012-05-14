@@ -72,13 +72,13 @@ public final class R {
     }
     public static final class string {
         public static final int app_name=0x7f040000;
-        public static final int err_not_valid_zip_file=0x7f04001b;
+        public static final int err_not_valid_zip_file=0x7f04001c;
         public static final int extracted_num_files=0x7f040016;
         public static final int extracting_file=0x7f040014;
         public static final int extracting_files=0x7f040015;
-        public static final int info_available_in_paid_version=0x7f040018;
-        public static final int info_install_file_manager=0x7f040017;
-        public static final int info_please_input_path=0x7f040019;
+        public static final int info_available_in_future_version=0x7f040019;
+        public static final int info_install_file_manager=0x7f040018;
+        public static final int info_please_input_path=0x7f04001a;
         public static final int label_crc=0x7f04000d;
         public static final int label_csize=0x7f04000c;
         public static final int label_md5=0x7f04000e;
@@ -94,10 +94,11 @@ public final class R {
         public static final int menu_extract=0x7f040002;
         public static final int menu_info=0x7f040006;
         public static final int menu_test=0x7f040003;
+        public static final int num_out_of_extracted=0x7f040017;
         public static final int reading_file=0x7f040013;
         public static final int select_file_to_load=0x7f040012;
         public static final int title_extract_files=0x7f040010;
         public static final int title_file_info=0x7f040011;
-        public static final int warn_not_yet_implemented=0x7f04001a;
+        public static final int warn_not_yet_implemented=0x7f04001b;
     }
 }

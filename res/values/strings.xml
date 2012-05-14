@@ -27,9 +27,10 @@
     <string name="extracting_file">Extracting file: %s&#8230;</string>
     <string name="extracting_files">Extracting file(s).</string>
     <string name="extracted_num_files">Extracted %d file(s).</string>
+    <string name="num_out_of_extracted">%1$s out of %2$s file(s) extracted.</string>
 
     <string name="info_install_file_manager">Please install a File Manager.</string>
-    <string name="info_available_in_paid_version">This feature would hopefully be available in future releases.</string>
+    <string name="info_available_in_future_version">This feature would hopefully be available in future releases.</string>
     <string name="info_please_input_path">Please input the directory where you want to extract the file(s).</string>
 
     <string name="warn_not_yet_implemented">Not yet implemented.</string>

@@ -17,25 +17,37 @@ import android.content.Intent;
 import android.os.AsyncTask;
 import android.support.v4.content.LocalBroadcastManager;
 
-public class ContentsExtractor extends AsyncTask<Object, String, Integer> {
+public class ContentsExtractor extends AsyncTask<String, Object, Integer> {
 
 	private Logger logger = Logger.getLogger(ContentsExtractor.class.getName());
+	
+	final public static String NEW_ENTRY = "NEW_ENTRY";
+	final public static String OLD_ENTRY = "OLD_ENTRY";
+	final public static String ENTRY_NAME = "ENTRY_NAME";
+	final public static String ENTRY_SIZE = "ENTRY_SIZE";
+	final public static String BYTES_READ = "BYTES_READ";
+	final public static String TOTAL_FILES = "TOTAL_FILES";
+	final public static String TOTAL_SIZE = "TOTAL_SIZE";
+	
 	final private static int MAX_BYTES = 24 * 1024;
 
 	private Context context;
+	private Map<String, Object> zipEntries;
 	private File file;
 
 	private int numToBeExtracted = 0;
 	private long totalSizeToBeExtracted = 0;	
 	
-	public ContentsExtractor(Context context) {
+	public ContentsExtractor(File file, Map<String, Object> zipEntries, Context context) {
+		this.file = file;
+		this.zipEntries = zipEntries;
 		this.context = context;
 	}
 	
 	@Override
-	protected Integer doInBackground(Object... params) {
+	protected Integer doInBackground(String... params) {
 		long current = System.currentTimeMillis();
-		Integer extracted = unzipContents((Map<String, Object>)params[0], (String)params[1]);
+		Integer extracted = unzipContents(params[0]);
 		logger.debug("Elapsed: " + (System.currentTimeMillis() - current) / 1000 + " secs.");
 		return extracted;
 	}
@@ -43,9 +55,13 @@ public class ContentsExtractor extends AsyncTask<Object, String, Integer> {
 	@Override
 	protected void onPreExecute() {
 		super.onPreExecute();
+		logger.debug("Retrieving stats.");
+		retrieveStats(zipEntries);
 		LocalBroadcastManager.getInstance(context).sendBroadcast(wrapIntent(
 				ViewerActivity.VA_START_CONTENT_EXTRACT, 
-				"data", context.getResources().getString(R.string.extracting_files)));			
+				ViewerActivity.STATUS_TEXT, context.getResources().getString(R.string.extracting_files),
+				TOTAL_FILES, getNumToBeExtracted(),
+				TOTAL_SIZE, getTotalSizeToBeExtracted()));			
 	}
 	
 	@Override
@@ -53,27 +69,29 @@ public class ContentsExtractor extends AsyncTask<Object, String, Integer> {
 		super.onPostExecute(result);
 		LocalBroadcastManager.getInstance(context).sendBroadcast(wrapIntent(
 				ViewerActivity.VA_END_CONTENT_EXTRACT, 
-				"data", context.getResources().getString(R.string.extracted_num_files, result)));			
+				ViewerActivity.STATUS_TEXT, context.getResources().getString(R.string.extracted_num_files, result)));			
 	}
 	
 	@Override
-	protected void onProgressUpdate(String... values) {
+	protected void onProgressUpdate(Object... values) {
 		super.onProgressUpdate(values);
-		LocalBroadcastManager.getInstance(context).sendBroadcast(wrapIntent(
-				"NEW_ENTRY".equals(values[0]) ? ViewerActivity.VA_SHOW_NEW_PROGRESS_INFO :
-												ViewerActivity.VA_SHOW_PROGRESS_INFO, 
-				"name", values[1],
-				"entrySize", values[2],
-				"entryExtracted", values[3],
-				"totalFiles", values[4],
-				"totalSize", values[5]));			
-	}
-
-
-	public Integer unzipContents(Map<String, Object> zipEntries, String extractPath) {
-		logger.debug("Retrieving stats.");
-		retrieveStats(zipEntries);
 		
+		if (NEW_ENTRY.equals(values[0])) {
+			LocalBroadcastManager.getInstance(context).sendBroadcast(wrapIntent(
+					ViewerActivity.VA_SHOW_NEW_PROGRESS_INFO, 
+					ViewerActivity.STATUS_TEXT, context.getResources().getString(R.string.extracting_file, values[1]),
+					ENTRY_SIZE, values[2]
+			));			
+		}
+		else {
+			LocalBroadcastManager.getInstance(context).sendBroadcast(wrapIntent(
+					ViewerActivity.VA_SHOW_UPDATE_PROGRESS_INFO, 
+					BYTES_READ, values[1]
+			));			
+		}
+	}
+	
+	public Integer unzipContents(String extractPath) {
 		logger.debug("Extracting to: " + extractPath);
 		ZipFile zipFile = null;
 		Integer extracted = 0;
@@ -94,21 +112,31 @@ public class ContentsExtractor extends AsyncTask<Object, String, Integer> {
 			}
 		}
 	}
+	
+	private int getNumToBeExtracted() {
+		return numToBeExtracted;
+	}
 
-	private void retrieveStats(Map<String, Object> zipEntries) {
-		for (Map.Entry<String, Object> entry : zipEntries.entrySet()) {
-			if(!"..".equals(entry.getKey()) && entry.getValue() instanceof Map )
-				retrieveStats((Map<String, Object>)entry.getValue());
-			else if (entry.getValue() instanceof ZipEntry){
+	private long getTotalSizeToBeExtracted() {
+		return totalSizeToBeExtracted;
+	}
+
+	private void retrieveStats(Map<String, Object> entries) {
+		for (Map.Entry<String, Object> entry : entries.entrySet()) {
+			if (entry.getValue() instanceof ZipEntry) {
 				ZipEntry zipEntry = (ZipEntry)entry.getValue();
 				numToBeExtracted++;
 				totalSizeToBeExtracted += zipEntry.getSize();
 			}
+			else {
+				if (!"..".equals(entry.getKey())) {
+					retrieveStats((Map<String, Object>)entry.getValue());
+				}
+			}
 		}
-		
 	}
-
-	private Integer extractContents(Map<String, Object> zipEntries, ZipFile zipFile, String extractPath) throws IOException {
+	
+	private Integer extractContents(Map<String, Object> entries, ZipFile zipFile, String extractPath) throws IOException {
 		File path = new File(extractPath);
 		if (!path.exists())
 			if (!path.mkdirs()) {
@@ -118,20 +146,16 @@ public class ContentsExtractor extends AsyncTask<Object, String, Integer> {
 				throw e;
 			}
 		int extracted = 0;
-		for (Map.Entry<String, Object> entry : zipEntries.entrySet()) {
+		for (Map.Entry<String, Object> entry : entries.entrySet()) {
 			if (entry.getValue() instanceof ZipEntry) {
 				
-				publishProgress("NEW_ENTRY", 
-						entry.getKey(), 
-						((ZipEntry)entry.getValue()).getSize() + "", "0",
-						getNumToBeExtracted() + "", getTotalSizeToBeExtracted() + "" );
-				
+				publishProgress(NEW_ENTRY, entry.getKey(), (int)((ZipEntry)entry.getValue()).getSize());
 				InputStream is = zipFile.getInputStream((ZipEntry)entry.getValue());
 				writeFile(entry.getKey(), (ZipEntry)entry.getValue(), is, extractPath);
 				is.close();
 				extracted++;
 			}
-			else { // instance of Map
+			else { 
 				if (!"..".equals(entry.getKey())) {
 					extracted += extractContents((Map<String, Object>)entry.getValue(), zipFile, extractPath + "/" + entry.getKey());
 				}
@@ -139,42 +163,34 @@ public class ContentsExtractor extends AsyncTask<Object, String, Integer> {
 		}
 		return extracted;
 	}
-
+	
 	private void writeFile(String key, ZipEntry entry, InputStream is, String extractPath) throws IOException {
 		FileOutputStream fos = new FileOutputStream(extractPath + "/" + key);
 		byte[] buffer = new byte[MAX_BYTES];
 		int count = 0;
-		int extracted = 0;
 		while ((count = is.read(buffer, 0, MAX_BYTES)) > 0) {
 			fos.write(buffer, 0, count);
-			extracted += count;
-			
-			publishProgress("OLD_ENTRY", 
-					key, 
-					entry.getSize() + "", extracted + "", 
-					getNumToBeExtracted() + "", getTotalSizeToBeExtracted() + "" );
+			publishProgress(OLD_ENTRY, count);
 		}
 		fos.close();
 		logger.debug("Written to file: " + extractPath + "/" + key + ".");
 	}
 
-	public void setFile(File file) {
-		this.file = file;
-	}
-	
-	public int getNumToBeExtracted() {
-		return numToBeExtracted;
-	}
-
-	public long getTotalSizeToBeExtracted() {
-		return totalSizeToBeExtracted;
-	}
-
-	private Intent wrapIntent(String action, String... keyVals) {
+	private Intent wrapIntent(String action, Object... extras) {
 		Intent intent = new Intent(context, ViewerActivity.class);
 		intent.setAction(action);
-		for (int i=0; i<(keyVals.length/2); i++) 
-			intent.putExtra(keyVals[(2*i)], keyVals[(2*i)+1]);
+		for (int i=0; i<(extras.length/2); i++) {
+			String key = (String)extras[(2*i)];
+			Object value = extras[(2*i)+1];
+			if (value instanceof String) 
+				intent.putExtra(key, (String)value);
+			else if (value instanceof Integer)
+				intent.putExtra(key, (Integer)value);
+			else if (value instanceof Long)
+				intent.putExtra(key, (Long)value);
+			else if (value instanceof Boolean)
+				intent.putExtra(key, (Boolean)value);
+		}
 		return intent;
 	}
 

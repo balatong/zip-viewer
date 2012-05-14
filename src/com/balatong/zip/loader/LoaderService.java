@@ -63,7 +63,7 @@ public class LoaderService extends BaseService {
 					+ " is not a valid file.");
 			LocalBroadcastManager.getInstance(LoaderService.this).sendBroadcastSync(wrapIntent(
 					ViewerActivity.VA_SET_STATUS_TEXT, 
-					getString(R.string.err_not_valid_zip_file, file.getAbsolutePath())));			
+					ViewerActivity.STATUS_TEXT, getString(R.string.err_not_valid_zip_file, file.getAbsolutePath())));
 			return null;
 		}
 		reader = new FileReader(LoaderService.this);
@@ -79,10 +79,21 @@ public class LoaderService extends BaseService {
 			reader.closeFile();
 	}
 
-	private Intent wrapIntent(String action, String data) {
+	private Intent wrapIntent(String action, Object... extras) {
 		Intent intent = new Intent(LoaderService.this, ViewerActivity.class);
 		intent.setAction(action);
-		intent.putExtra("data", data);
+		for (int i=0; i<(extras.length/2); i++) {
+			String key = (String)extras[(2*i)];
+			Object value = extras[(2*i)+1];
+			if (value instanceof String) 
+				intent.putExtra(key, (String)value);
+			else if (value instanceof Integer)
+				intent.putExtra(key, (Integer)value);
+			else if (value instanceof Long)
+				intent.putExtra(key, (Long)value);
+			else if (value instanceof Boolean)
+				intent.putExtra(key, (Boolean)value);
+		}
 		return intent;
 	}
 
