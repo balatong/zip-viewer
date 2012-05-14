@@ -23,7 +23,7 @@
     
     <string name="select_file_to_load">Select a file to load.</string>
     <string name="reading_file">Reading %d file(s).</string>
-    <string name="extracting_file">Extracting file: %s...</string>
+    <string name="extracting_file">Extracting file: %s&#8230;</string>
     <string name="extracting_files">Extracting file(s).</string>
     <string name="extracted_num_files">Extracted %d file(s).</string>
 
