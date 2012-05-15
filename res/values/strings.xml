@@ -27,8 +27,12 @@
     <string name="extracting_file">Extracting file: %s&#8230;</string>
     <string name="extracting_files">Extracting file(s).</string>
     <string name="extracted_num_files">Extracted %d file(s).</string>
-    <string name="num_out_of_extracted">%1$s out of %2$s file(s) extracted.</string>
-
+    <string name="num_out_of_processed">%1$s out of %2$s file(s) processed.</string>
+    <string name="confirm_file_check">Proceed with CRC check?</string>
+    <string name="calculating_crc">Calculating CRC: %s&#8230;</string>
+    <string name="validating_files">Validating file(s).</string>
+    <string name="validated_file">%d file(s) failed validation.</string>
+	
     <string name="info_install_file_manager">Please install a File Manager.</string>
     <string name="info_available_in_future_version">This feature would hopefully be available in future releases.</string>
     <string name="info_please_input_path">Please input the directory where you want to extract the file(s).</string>

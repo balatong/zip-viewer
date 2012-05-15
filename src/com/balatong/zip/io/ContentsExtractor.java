@@ -10,6 +10,7 @@ import java.util.zip.ZipFile;
 
 import com.balatong.logger.Logger;
 import com.balatong.zip.R;
+import com.balatong.zip.helper.StatsUtil;
 import com.balatong.zip.viewer.ViewerActivity;
 
 import android.content.Context;
@@ -35,9 +36,6 @@ public class ContentsExtractor extends AsyncTask<String, Object, Integer> {
 	private Map<String, Object> zipEntries;
 	private File file;
 
-	private int numToBeExtracted = 0;
-	private long totalSizeToBeExtracted = 0;	
-	
 	public ContentsExtractor(File file, Map<String, Object> zipEntries, Context context) {
 		this.file = file;
 		this.zipEntries = zipEntries;
@@ -45,9 +43,9 @@ public class ContentsExtractor extends AsyncTask<String, Object, Integer> {
 	}
 	
 	@Override
-	protected Integer doInBackground(String... params) {
+	protected Integer doInBackground(String... extractPath) {
 		long current = System.currentTimeMillis();
-		Integer extracted = unzipContents(params[0]);
+		Integer extracted = unzipContents(extractPath[0]);
 		logger.debug("Elapsed: " + (System.currentTimeMillis() - current) / 1000 + " secs.");
 		return extracted;
 	}
@@ -56,19 +54,21 @@ public class ContentsExtractor extends AsyncTask<String, Object, Integer> {
 	protected void onPreExecute() {
 		super.onPreExecute();
 		logger.debug("Retrieving stats.");
-		retrieveStats(zipEntries);
+		StatsUtil statsUtil = StatsUtil.getInstance();
+		statsUtil.retrieveToBeExtractedStats(zipEntries);
 		LocalBroadcastManager.getInstance(context).sendBroadcast(wrapIntent(
-				ViewerActivity.VA_START_CONTENT_EXTRACT, 
+				ViewerActivity.VA_START_PROCESS_CONTENT, 
 				ViewerActivity.STATUS_TEXT, context.getResources().getString(R.string.extracting_files),
-				TOTAL_FILES, getNumToBeExtracted(),
-				TOTAL_SIZE, getTotalSizeToBeExtracted()));			
+				ViewerActivity.TITLE_TEXT, context.getResources().getString(R.string.extracting_files),
+				TOTAL_FILES, statsUtil.getNumToBeExtracted(),
+				TOTAL_SIZE, statsUtil.getTotalSizeToBeExtracted()));			
 	}
 	
 	@Override
 	protected void onPostExecute(Integer result) {
 		super.onPostExecute(result);
 		LocalBroadcastManager.getInstance(context).sendBroadcast(wrapIntent(
-				ViewerActivity.VA_END_CONTENT_EXTRACT, 
+				ViewerActivity.VA_END_PROCESS_CONTENT, 
 				ViewerActivity.STATUS_TEXT, context.getResources().getString(R.string.extracted_num_files, result)));			
 	}
 	
@@ -113,29 +113,6 @@ public class ContentsExtractor extends AsyncTask<String, Object, Integer> {
 		}
 	}
 	
-	private int getNumToBeExtracted() {
-		return numToBeExtracted;
-	}
-
-	private long getTotalSizeToBeExtracted() {
-		return totalSizeToBeExtracted;
-	}
-
-	private void retrieveStats(Map<String, Object> entries) {
-		for (Map.Entry<String, Object> entry : entries.entrySet()) {
-			if (entry.getValue() instanceof ZipEntry) {
-				ZipEntry zipEntry = (ZipEntry)entry.getValue();
-				numToBeExtracted++;
-				totalSizeToBeExtracted += zipEntry.getSize();
-			}
-			else {
-				if (!"..".equals(entry.getKey())) {
-					retrieveStats((Map<String, Object>)entry.getValue());
-				}
-			}
-		}
-	}
-	
 	private Integer extractContents(Map<String, Object> entries, ZipFile zipFile, String extractPath) throws IOException {
 		File path = new File(extractPath);
 		if (!path.exists())
@@ -151,7 +128,7 @@ public class ContentsExtractor extends AsyncTask<String, Object, Integer> {
 				
 				publishProgress(NEW_ENTRY, entry.getKey(), (int)((ZipEntry)entry.getValue()).getSize());
 				InputStream is = zipFile.getInputStream((ZipEntry)entry.getValue());
-				writeFile(entry.getKey(), (ZipEntry)entry.getValue(), is, extractPath);
+				writeFile(entry.getKey(), is, extractPath);
 				is.close();
 				extracted++;
 			}
@@ -164,7 +141,7 @@ public class ContentsExtractor extends AsyncTask<String, Object, Integer> {
 		return extracted;
 	}
 	
-	private void writeFile(String key, ZipEntry entry, InputStream is, String extractPath) throws IOException {
+	private void writeFile(String key, InputStream is, String extractPath) throws IOException {
 		FileOutputStream fos = new FileOutputStream(extractPath + "/" + key);
 		byte[] buffer = new byte[MAX_BYTES];
 		int count = 0;

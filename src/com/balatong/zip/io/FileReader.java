@@ -11,6 +11,7 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.zip.CRC32;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
@@ -25,7 +26,7 @@ import android.content.Intent;
 import android.os.AsyncTask;
 import android.support.v4.content.LocalBroadcastManager;
 
-public class FileReader extends AsyncTask<File, Integer, Map<String, Object>>{
+public class FileReader extends AsyncTask<File, Object, Map<String, Object>>{
 		
 	private static Logger logger = Logger.getLogger(FileReader.class.getName());
 
@@ -60,7 +61,7 @@ public class FileReader extends AsyncTask<File, Integer, Map<String, Object>>{
 	}	
 	
 	@Override
-	protected void onProgressUpdate(Integer... progress) {
+	protected void onProgressUpdate(Object... progress) {
 		super.onProgressUpdate(progress);
 		LocalBroadcastManager.getInstance(context).sendBroadcastSync(wrapIntent(
 				ViewerActivity.VA_START_FILE_READ, 
@@ -171,9 +172,9 @@ public class FileReader extends AsyncTask<File, Integer, Map<String, Object>>{
 		return intent;
 	}
 
-
 	public void closeFile() {
 	}
 
+	
 
 }

@@ -7,6 +7,7 @@ import java.util.Map;
 import com.balatong.BaseService;
 import com.balatong.logger.Logger;
 import com.balatong.zip.R;
+import com.balatong.zip.io.CrcValidator;
 import com.balatong.zip.io.FileReader;
 import com.balatong.zip.viewer.ViewerActivity;
 
@@ -24,9 +25,13 @@ public class LoaderService extends BaseService {
 	
 	private File file;
 	private FileReader reader;
+	private CrcValidator crcValidator;
 	private LoaderBinder fBinder = new LoaderBinder();
 	
 	public class LoaderBinder extends Binder {
+		public File getFile() {
+			return file;
+		}
 		public File readZipFile(Intent intent) {
 			return readFile(intent);
 		}
@@ -36,15 +41,16 @@ public class LoaderService extends BaseService {
 		public Map<String, Object> getResult() {
 			return reader.getEntries();
 		}
-		public File getFile() {
-			return file;
+		public void crcCheckZipFile() {
+			crcCheck();
 		}
 	}
 
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
 		int sticky = super.onStartCommand(intent, flags, startId);
-		readFile(intent);
+		if (intent != null && intent.getData() != null) 
+			readFile(intent);
 		return sticky;
 	}
 	
@@ -66,10 +72,16 @@ public class LoaderService extends BaseService {
 					ViewerActivity.STATUS_TEXT, getString(R.string.err_not_valid_zip_file, file.getAbsolutePath())));
 			return null;
 		}
+		
 		reader = new FileReader(LoaderService.this);
 		reader.execute(file);
-
+		
 		return file;
+	}
+
+	private void crcCheck() {
+		crcValidator = new CrcValidator(file, reader.getEntries(), LoaderService.this);
+		crcValidator.execute();
 	}
 
 	@Override

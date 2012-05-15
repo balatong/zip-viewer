@@ -5,6 +5,7 @@ import java.io.FileInputStream;
 import java.io.InputStream;
 import java.security.MessageDigest;
 import java.util.HashMap;
+import java.util.zip.CRC32;
 
 import com.balatong.logger.Logger;
 import com.balatong.zip.viewer.ViewerActivity;
@@ -21,6 +22,7 @@ public class DigestExtractor extends AsyncTask<File, Void, HashMap<String, Strin
 	private Context context;
 	final public static String MD5 = "MD5";
 	final public static String SHA1 = "SHA1";
+	final public static String CRC = "CRC";
 	
 	public DigestExtractor(Context context) {
 		this.context = context;
@@ -32,12 +34,14 @@ public class DigestExtractor extends AsyncTask<File, Void, HashMap<String, Strin
 		
 		File file = params[0];
 		MessageDigest md5 = null;
-		MessageDigest sha1 = null;		
+		MessageDigest sha1 = null;
+		CRC32 crc32 = null;
 		InputStream is = null;
 		
 		try {
 			md5 = MessageDigest.getInstance("MD5");
 			sha1 = MessageDigest.getInstance("SHA1");
+			crc32 = new CRC32();
 			is = new FileInputStream(file);
 			
 			int count = 0;
@@ -45,6 +49,7 @@ public class DigestExtractor extends AsyncTask<File, Void, HashMap<String, Strin
 			while ((count = is.read(buffer)) > 0) {
 				md5.update(buffer, 0, count);
 				sha1.update(buffer, 0, count);
+				crc32.update(buffer, 0, count);
 			}
 			
 			StringBuilder md5Builder = new StringBuilder();
@@ -69,11 +74,14 @@ public class DigestExtractor extends AsyncTask<File, Void, HashMap<String, Strin
 			}
 			digest.put("SHA1", sha1Builder.toString());
 			
+			digest.put("CRC", Long.toString(crc32.getValue()));
+			
 			return digest;
 		}
 		catch (Exception e) {
 			digest.put("MD5", "Unable to read md5sum.");
 			digest.put("SHA1", "Unable to read sha1sum.");
+			digest.put("CRC", "Unable to read sha1sum.");
 			return digest;
 		}
 		finally {
@@ -89,7 +97,8 @@ public class DigestExtractor extends AsyncTask<File, Void, HashMap<String, Strin
 		LocalBroadcastManager.getInstance(context).sendBroadcastSync(wrapIntent(
 				ViewerActivity.VA_SHOW_FILE_CHECKSUMS, 
 				MD5, result.get(MD5),
-				SHA1, result.get(SHA1)
+				SHA1, result.get(SHA1),
+				CRC, result.get(CRC)
 		));			
 	}
 
