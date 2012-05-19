@@ -8,7 +8,7 @@ import java.util.HashMap;
 import java.util.zip.CRC32;
 
 import com.balatong.logger.Logger;
-import com.balatong.zip.viewer.ViewerActivity;
+import com.balatong.zip.view.ViewerActivity;
 
 import android.content.Context;
 import android.content.Intent;

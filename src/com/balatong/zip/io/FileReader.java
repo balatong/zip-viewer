@@ -18,8 +18,8 @@ import java.util.zip.ZipInputStream;
 
 import com.balatong.logger.Logger;
 import com.balatong.zip.R;
-import com.balatong.zip.loader.LoaderService;
-import com.balatong.zip.viewer.ViewerActivity;
+import com.balatong.zip.service.UnzipperService;
+import com.balatong.zip.view.ViewerActivity;
 
 import android.content.Context;
 import android.content.Intent;

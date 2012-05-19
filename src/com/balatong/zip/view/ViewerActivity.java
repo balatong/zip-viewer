@@ -1,4 +1,4 @@
-package com.balatong.zip.viewer;
+package com.balatong.zip.view;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -17,7 +17,8 @@ import com.balatong.zip.R;
 import com.balatong.zip.io.ContentsExtractor;
 import com.balatong.zip.io.DigestExtractor;
 import com.balatong.zip.io.FileReader;
-import com.balatong.zip.loader.LoaderService;
+import com.balatong.zip.service.UnzipperService;
+//import com.balatong.zip.service.ZipperService;
 
 import android.app.Activity;
 import android.app.AlertDialog;
@@ -56,10 +57,13 @@ public class ViewerActivity extends BaseActivity {
 
 	private static Logger logger = Logger.getLogger(ViewerActivity.class.getName());
 
+	public static final int ZIP_FILE_TO_OPEN = 0;
+
 	public static final String STATUS_TEXT = "STATUS_TEXT";
 	public static final String TITLE_TEXT = "TITLE_TEXT";
 	
 	public static final String VA_SET_STATUS_TEXT = "com.balatong.zip.viewer.VA_SET_STATUS_TEXT";
+	public static final String VA_REFRESH_CONTENTS = "com.balatong.zip.viewer.VA_REFRESH_CONTENTS";
 	public static final String VA_START_FILE_READ = "com.balatong.zip.viewer.VA_START_FILE_READ";
 	public static final String VA_END_FILE_READ = 	"com.balatong.zip.viewer.VA_END_FILE_READ";
 	public static final String VA_START_PROCESS_CONTENT = "com.balatong.zip.viewer.VA_START_PROCESS_CONTENT";
@@ -76,11 +80,11 @@ public class ViewerActivity extends BaseActivity {
 	private View infoView;
 	private View progressView;
 	
-	private ServiceConnection connection;
-	private LoaderService.LoaderBinder loader;
-	
+	private ServiceConnection unzipperServiceConnection;
+	private UnzipperService.Unzipper unzipper;
+		
 	private boolean receiversRegistered;
-	private boolean isBound;
+	private boolean isUnzipperBound;
 	
 	@Override
 	public void onCreate(final Bundle savedInstanceState) {
@@ -93,48 +97,67 @@ public class ViewerActivity extends BaseActivity {
 		zipContentsAdapter = new ContentsAdapter(this, directoryContents);
 
 		initializeMenus();
+		initializeServices();
 		
-		connection = new ServiceConnection() {
+		ImageButton menuOpen = (ImageButton)findViewById(R.id.img_btn_menu_open);
+		menuOpen.setEnabled(true);		
+		statusBar.setText(R.string.select_file_to_load);
+	}
+		
+	private void initializeServices() {
+		unzipperServiceConnection = new ServiceConnection() {
 			@Override
 			public void onServiceDisconnected(ComponentName name) {
-				loader.closeZipFile();
-				isBound = false;
+				unzipper.closeZipFile();
+				isUnzipperBound = false;
 			}
 			@Override
 			public void onServiceConnected(ComponentName name, IBinder service) {
-				loader = (LoaderService.LoaderBinder)service;
-				isBound = true;
+				unzipper = (UnzipperService.Unzipper)service;
+				isUnzipperBound = true;
 				ImageButton menuOpen = (ImageButton)findViewById(R.id.img_btn_menu_open);
 				menuOpen.setEnabled(true);
-				statusBar.setText(R.string.select_file_to_load);
-				logger.debug("Reading zip file.");
 			}
-		};
-		
-		Intent service = new Intent(ViewerActivity.this, LoaderService.class);
-		if (getIntent().getData() != null) {
-			service.setData(getIntent().getData());
-			startService(service);
+		};		
+		Intent unzipperIntent = new Intent(ViewerActivity.this, UnzipperService.class);
+		startService(unzipperIntent);
+		if (getIntent().getData() != null) { 
+			unzipperIntent.setData(getIntent().getData());
 		}
-		bindService(service, connection, Context.BIND_AUTO_CREATE);
-		
-		ImageButton menuOpen = (ImageButton)findViewById(R.id.img_btn_menu_open);
-		menuOpen.setEnabled(true);
-		
+		bindService(unzipperIntent, unzipperServiceConnection, Context.BIND_AUTO_CREATE);		
 	}
-		
+
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, final Intent intent) {
 		super.onActivityResult(requestCode, resultCode, intent);
 		switch (requestCode) {
-		case 0:
+		case ZIP_FILE_TO_OPEN:
 			if (resultCode == RESULT_OK) {
-				if (isBound) { 
-					loader.readZipFile(intent);
-					ImageButton menuOpen = (ImageButton)findViewById(R.id.img_btn_menu_open);
-					menuOpen.setEnabled(false);
-					toggleMenus(false);
-				}
+				ImageButton menuOpen = (ImageButton)findViewById(R.id.img_btn_menu_open);
+				menuOpen.setEnabled(false);
+				toggleMenus(false);
+				unzipper.readZipFile(intent);
+				zipContentsAdapter.setCurrentDirectory("");
+			}
+			else {
+				AlertDialog.Builder builder = new AlertDialog.Builder(ViewerActivity.this);
+				builder.setTitle(getResources().getText(R.string.title_open_google_play));
+				builder.setMessage(getResources().getText(R.string.info_no_file_manager_installed));
+				builder.setPositiveButton(android.R.string.ok, new AlertDialog.OnClickListener() {
+					public void onClick(DialogInterface dialog, int which) {
+						switch (which) {
+						case AlertDialog.BUTTON_POSITIVE:
+							String fileManagerUri = "market://details?id=org.openintents.filemanager";
+							Intent marketIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(fileManagerUri));
+							startActivity(marketIntent);
+							break;
+						default:
+							break;
+						}
+					}
+				});
+				builder.setNeutralButton(android.R.string.cancel, null);
+				builder.create().show();
 			}
 			break;
 		}
@@ -155,7 +178,7 @@ public class ViewerActivity extends BaseActivity {
 		        intent.setType("*/ear"); 
 		        intent.addCategory(Intent.CATEGORY_OPENABLE);
 		        try {
-		            startActivityForResult(Intent.createChooser(intent, null), 0);
+		            startActivityForResult(Intent.createChooser(intent, null), ZIP_FILE_TO_OPEN);
 		        } 
 		        catch (android.content.ActivityNotFoundException ex) {
 		            Toast.makeText(getParent(), 
@@ -181,12 +204,7 @@ public class ViewerActivity extends BaseActivity {
 						switch (which) {
 						case AlertDialog.BUTTON_POSITIVE:
 							String extractPath = ((EditText)viewExtractPath.findViewById(R.id.txt_extract_path)).getText().toString();
-							Map<String, Object> checkedZipEntries = zipContentsAdapter.getCheckedItems();
-							ContentsExtractor extractor = new ContentsExtractor(
-									loader.getFile(),
-									checkedZipEntries,
-									ViewerActivity.this);
-							extractor.execute(extractPath);
+							unzipper.extractZipEntries(zipContentsAdapter.getCheckedItems(), extractPath);
 							break;
 						default:
 							break;
@@ -204,13 +222,13 @@ public class ViewerActivity extends BaseActivity {
 			@Override
 			public void onClick(View v) {
 				AlertDialog.Builder builder = new AlertDialog.Builder(ViewerActivity.this);
-				builder.setTitle(getResources().getText(R.string.title_extract_files));
+				builder.setTitle(getResources().getText(R.string.title_check_files));
 				builder.setMessage(R.string.confirm_file_check);
 				builder.setPositiveButton(android.R.string.ok, new AlertDialog.OnClickListener() {
 					public void onClick(DialogInterface dialog, int which) {
 						switch (which) {
 						case AlertDialog.BUTTON_POSITIVE:
-							loader.crcCheckZipFile();
+							unzipper.crcCheckZipFile();
 							break;
 						default:
 							break;
@@ -227,12 +245,26 @@ public class ViewerActivity extends BaseActivity {
 		menuAdd.setOnClickListener(new View.OnClickListener() {
 			@Override
 			public void onClick(View v) {
+				LayoutInflater inflater = getLayoutInflater();
+				final View viewAddPath = inflater.inflate(R.layout.add_path_dialog, null);
+				
 				AlertDialog.Builder builder = new AlertDialog.Builder(ViewerActivity.this);
-				builder.setTitle(getResources().getText(R.string.warn_not_yet_implemented));
-				builder.setMessage(getResources().getText(R.string.info_available_in_future_version));
-				builder.setPositiveButton(android.R.string.ok, null);
+				builder.setTitle(getResources().getText(R.string.title_add_files));
+				builder.setView(viewAddPath);
+				builder.setPositiveButton(android.R.string.ok, new AlertDialog.OnClickListener() {
+					public void onClick(DialogInterface dialog, int which) {
+						switch (which) {
+						case AlertDialog.BUTTON_POSITIVE:
+							String addPath = ((EditText)viewAddPath.findViewById(R.id.txt_add_path)).getText().toString();
+							unzipper.addZipEntries(zipContentsAdapter.getCurrentDirectory(), addPath);
+							break;
+						default:
+							break;
+						}
+					}
+				});
+				builder.setNeutralButton(android.R.string.cancel, null);
 				builder.create().show();
-//				reader.addFile();
 			}
 		});
 		
@@ -242,11 +274,21 @@ public class ViewerActivity extends BaseActivity {
 			@Override
 			public void onClick(View v) {
 				AlertDialog.Builder builder = new AlertDialog.Builder(ViewerActivity.this);
-				builder.setTitle(getResources().getText(R.string.warn_not_yet_implemented));
-				builder.setMessage(getResources().getText(R.string.info_available_in_future_version));
-				builder.setPositiveButton(android.R.string.ok, null);
+				builder.setTitle(getResources().getText(R.string.title_delete_files));
+				builder.setMessage(R.string.confirm_file_delete);
+				builder.setPositiveButton(android.R.string.ok, new AlertDialog.OnClickListener() {
+					public void onClick(DialogInterface dialog, int which) {
+						switch (which) {
+						case AlertDialog.BUTTON_POSITIVE:
+							unzipper.deleteZipEntries(zipContentsAdapter.getCheckedItems());
+							break;
+						default:
+							break;
+						}
+					}
+				});
+				builder.setNeutralButton(android.R.string.cancel, null);
 				builder.create().show();
-//				reader.deleteFile();
 			}
 		});
 		
@@ -258,7 +300,7 @@ public class ViewerActivity extends BaseActivity {
 				LayoutInflater inflater = getLayoutInflater();
 				infoView = inflater.inflate(R.layout.file_info_dialog, null);
 				
-				File file = loader.getFile();
+				File file = unzipper.getFile();
 				TextView tView = (TextView)infoView.findViewById(R.id.txt_name);
 				tView.setText(file.getName());
 				tView = (TextView)infoView.findViewById(R.id.txt_path);
@@ -318,11 +360,18 @@ public class ViewerActivity extends BaseActivity {
 		public void onReceive(Context context, Intent intent) {
 			
 			String action = intent.getAction();
-			String statusText = intent.getExtras().getString(STATUS_TEXT);
 			if (VA_SET_STATUS_TEXT.equals(action)) {
+				String statusText = intent.getExtras().getString(STATUS_TEXT);
 				statusBar.setText(statusText);
+				logger.debug("Setting status with message: " + statusText);
+			}
+			else if (VA_REFRESH_CONTENTS.equals(action)) {
+				unzipper.readZipFile(intent);
+				logger.debug("Refresh contents: " + intent.getData().toString());
 			}
 			else if (VA_START_FILE_READ.equals(action)) {
+				String statusText = intent.getExtras().getString(STATUS_TEXT);
+
 				ImageButton menuOpen = (ImageButton)findViewById(R.id.img_btn_menu_open);
 				menuOpen.setEnabled(false);
 				toggleMenus(false);
@@ -332,6 +381,8 @@ public class ViewerActivity extends BaseActivity {
 				statusBar.setText(statusText);
 			}
 			else if (VA_END_FILE_READ.equals(action)) {
+				String statusText = intent.getExtras().getString(STATUS_TEXT);
+
 				ImageButton menuOpen = (ImageButton)findViewById(R.id.img_btn_menu_open);
 				menuOpen.setEnabled(true);
 				toggleMenus(true);
@@ -339,10 +390,13 @@ public class ViewerActivity extends BaseActivity {
 				activityBar.setVisibility(ProgressBar.INVISIBLE);
 				statusBar.setText(statusText);
 
-				zipContentsAdapter.setSource(loader.getResult());
+				zipContentsAdapter.setSource(unzipper.getResult());
 				directoryContents.setAdapter(zipContentsAdapter);
+				
 			}
 			else if (VA_START_PROCESS_CONTENT.equals(action)) {
+				String statusText = intent.getExtras().getString(STATUS_TEXT);
+
 				ImageButton menuOpen = (ImageButton)findViewById(R.id.img_btn_menu_open);
 				menuOpen.setEnabled(false);
 				toggleMenus(false);
@@ -362,11 +416,20 @@ public class ViewerActivity extends BaseActivity {
 					AlertDialog.Builder builder = new AlertDialog.Builder(ViewerActivity.this);
 					builder.setTitle(intent.getExtras().getString(TITLE_TEXT));
 					builder.setView(progressView);
-					builder.setPositiveButton(android.R.string.ok, null);
+					builder.setPositiveButton(android.R.string.ok, new DialogInterface.OnClickListener() {
+						public void onClick(DialogInterface dialog, int which) {
+							Intent intent = new Intent();
+							intent.setData(Uri.parse(unzipper.getFile().toString()));
+							unzipper.readZipFile(intent);
+							zipContentsAdapter.setCurrentDirectory("");
+						}
+					});
 					builder.create().show();
 				}
 			}
 			else if (VA_END_PROCESS_CONTENT.equals(action)) {
+				String statusText = intent.getExtras().getString(STATUS_TEXT);
+
 				ImageButton menuOpen = (ImageButton)findViewById(R.id.img_btn_menu_open);
 				menuOpen.setEnabled(true);
 				toggleMenus(true);
@@ -378,10 +441,18 @@ public class ViewerActivity extends BaseActivity {
 
 				ProgressBar pbarTotalEntries = (ProgressBar)progressView.findViewById(R.id.pbar_processing_total);
 				pbarTotalEntries.incrementProgressBy(1);
+
+				ProgressBar pbarEntry = (ProgressBar)progressView.findViewById(R.id.pbar_processing_entry);
+				pbarEntry.setMax(1);
+				pbarEntry.setProgress(1);
 				
 				progressView = null;
 			}
 			else if (VA_SHOW_NEW_PROGRESS_INFO.equals(action)) {
+				String statusText = intent.getExtras().getString(STATUS_TEXT);
+				if (progressView == null) 
+					return;
+
 				ProgressBar pbarTotalEntries = (ProgressBar)progressView.findViewById(R.id.pbar_processing_total);
 				pbarTotalEntries.incrementProgressBy(1);
 				
@@ -397,6 +468,9 @@ public class ViewerActivity extends BaseActivity {
 				processingEntryText.setText(statusText);
 			}
 			else if (VA_SHOW_UPDATE_PROGRESS_INFO.equals(action)) {
+				if (progressView == null) 
+					return;
+
 				ProgressBar pbarEntry = (ProgressBar)progressView.findViewById(R.id.pbar_processing_entry);
 				pbarEntry.incrementProgressBy(intent.getExtras().getInt(ContentsExtractor.BYTES_READ));				
 			}
@@ -422,7 +496,6 @@ public class ViewerActivity extends BaseActivity {
 				view.removeAllViews();
 				view.addView(crcView); 
 			}
-			
 		}
 	};
 	
@@ -431,6 +504,7 @@ public class ViewerActivity extends BaseActivity {
 		super.onResume();
 		IntentFilter intentFilter = new IntentFilter();
 		intentFilter.addAction(VA_SET_STATUS_TEXT);
+		intentFilter.addAction(VA_REFRESH_CONTENTS);
 		intentFilter.addAction(VA_START_FILE_READ);
 		intentFilter.addAction(VA_END_FILE_READ);
 		intentFilter.addAction(VA_START_PROCESS_CONTENT);
@@ -460,12 +534,11 @@ public class ViewerActivity extends BaseActivity {
 	public void onDestroy() {
 		super.onDestroy();
 		
-		if (isBound) {
-			Intent service = new Intent(ViewerActivity.this, LoaderService.class);
-			unbindService(connection);
-			stopService(service);
-			isBound = false;
+		if (isUnzipperBound) {
+			unbindService(unzipperServiceConnection);
 		}
+		Intent unzipperIntent = new Intent(ViewerActivity.this, UnzipperService.class);
+		stopService(unzipperIntent);
 	} 
 
 }

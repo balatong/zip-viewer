@@ -14,59 +14,62 @@ import java.util.zip.ZipFile;
 import com.balatong.logger.Logger;
 import com.balatong.zip.R;
 import com.balatong.zip.helper.StatsUtil;
-import com.balatong.zip.viewer.ViewerActivity;
+import com.balatong.zip.view.ViewerActivity;
 
 import android.content.Context;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.support.v4.content.LocalBroadcastManager;
 
-public class CrcValidator extends AsyncTask<Void, Object, List<String>> {
+public class CrcValidator extends AsyncTask<Object, Object, List<String>> {
 
 	private Logger logger = Logger.getLogger(CrcValidator.class.getName());
 
+	final private static int MAX_BYTES = 24 * 1024;
+	
 	final public static String NEW_ENTRY = "NEW_ENTRY";
 	final public static String OLD_ENTRY = "OLD_ENTRY";
+	final public static String SET_PROGRESS_DIALOG = "SET_PROGRESS_DIALOG";
 	final public static String ENTRY_SIZE = "ENTRY_SIZE";
 	final public static String BYTES_READ = "BYTES_READ";
 	final public static String TOTAL_FILES = "TOTAL_FILES";
 	final public static String TOTAL_SIZE = "TOTAL_SIZE";
 
 	private Context context;
-	private Map<String, Object> zipEntries;
+//	private Map<String, Object> zipEntries;
 	private File file;
 
 	private int totalCrcPass = 0;
 	private int totalCrcFail = 0;
 
-	public CrcValidator(File file, Map<String, Object> zipEntries, Context context) {
+	public CrcValidator(File file, Context context) {
 		this.file = file;
-		this.zipEntries = zipEntries;
+//		this.zipEntries = zipEntries;
 		this.context = context;
 	}
 	
 	@Override
-	protected List<String> doInBackground(Void... args) {
+	protected List<String> doInBackground(Object... zipEntries) {
 		long current = System.currentTimeMillis();
-		List<String> failedCrcEntries = crcCheck();
+		List<String> failedCrcEntries = crcCheck((Map<String, Object>)zipEntries[0]);
 		logger.debug("Elapsed CRC check: " + (System.currentTimeMillis() - current) / 1000 + " secs.");
 		return failedCrcEntries;
 	}
 	
-	@Override
-	protected void onPreExecute() {
-		super.onPreExecute();
-		logger.debug("Retrieving stats.");
-		StatsUtil statsUtil = StatsUtil.getInstance();
-		statsUtil.retrieveToBeExtractedStats(zipEntries);
-		LocalBroadcastManager.getInstance(context).sendBroadcast(wrapIntent(
-				ViewerActivity.VA_START_PROCESS_CONTENT, 
-				ViewerActivity.STATUS_TEXT, context.getResources().getString(R.string.validating_files),
-				ViewerActivity.TITLE_TEXT, context.getResources().getString(R.string.validating_files),
-				TOTAL_FILES, statsUtil.getNumToBeExtracted(),
-				TOTAL_SIZE, statsUtil.getTotalSizeToBeExtracted()
-		));			
-	}
+//	@Override
+//	protected void onPreExecute() {
+//		super.onPreExecute();
+//		logger.debug("Retrieving stats.");
+//		StatsUtil statsUtil = StatsUtil.getInstance();
+//		statsUtil.retrieveToBeExtractedStats(zipEntries);
+//		LocalBroadcastManager.getInstance(context).sendBroadcast(wrapIntent(
+//				ViewerActivity.VA_START_PROCESS_CONTENT, 
+//				ViewerActivity.STATUS_TEXT, context.getResources().getString(R.string.validating_files),
+//				ViewerActivity.TITLE_TEXT, context.getResources().getString(R.string.validating_files),
+//				TOTAL_FILES, statsUtil.getNumToBeExtracted(),
+//				TOTAL_SIZE, statsUtil.getTotalSizeToBeExtracted()
+//		));			
+//	}
 	
 	@Override
 	protected void onPostExecute(List<String> result) {
@@ -88,19 +91,32 @@ public class CrcValidator extends AsyncTask<Void, Object, List<String>> {
 					ENTRY_SIZE, values[2]
 			));			
 		}
-		else {
+		else if (OLD_ENTRY.equals(values[0])) {
 			LocalBroadcastManager.getInstance(context).sendBroadcast(wrapIntent(
 					ViewerActivity.VA_SHOW_UPDATE_PROGRESS_INFO, 
 					BYTES_READ, values[1]
 			));			
 		}
+		else if (SET_PROGRESS_DIALOG.equals(values[0])) {
+			StatsUtil statsUtil = StatsUtil.getInstance();
+			statsUtil.retrieveToBeExtractedStats((Map<String, Object>)values[1]);
+			LocalBroadcastManager.getInstance(context).sendBroadcast(wrapIntent(
+					ViewerActivity.VA_START_PROCESS_CONTENT, 
+					ViewerActivity.STATUS_TEXT, context.getResources().getString(R.string.validating_files),
+					ViewerActivity.TITLE_TEXT, context.getResources().getString(R.string.validating_files),
+					TOTAL_FILES, statsUtil.getNumToBeExtracted(),
+					TOTAL_SIZE, statsUtil.getTotalSizeToBeExtracted()
+			));			
+		}
 	}
 
-	private List<String> crcCheck() {
+	private List<String> crcCheck(Map<String, Object> zipEntries) {
 		ZipFile zipFile = null;;
 		try {
 			logger.info("Opening up " + file.getName() + ".");
 			zipFile = new ZipFile(file);
+			
+			publishProgress(SET_PROGRESS_DIALOG, zipEntries);
 			return verifyCrc(zipEntries, zipFile);			
 		}
 		catch (Exception e) {
@@ -150,7 +166,7 @@ public class CrcValidator extends AsyncTask<Void, Object, List<String>> {
 	private long computeCrc(InputStream is) throws IOException {
 		CRC32 crc32 = new CRC32();
 		int count = 0;
-		byte buffer[] = new byte[24 * 1024];
+		byte buffer[] = new byte[MAX_BYTES];
 		while ((count = is.read(buffer)) > 0) {
 			crc32.update(buffer, 0, count);
 			publishProgress(OLD_ENTRY, count);

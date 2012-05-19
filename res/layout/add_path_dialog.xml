@@ -9,14 +9,15 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_margin="10dp"
-        android:text="@string/info_please_input_extract_path" />
-
+        android:text="@string/info_please_input_add_path" />
+
     <EditText
-        android:id="@+id/txt_extract_path"
+        android:id="@+id/txt_add_path"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_margin="10dp"
         android:ems="10"
-        android:text="/sdcard/" android:layout_margin="10dp">
+        android:text="/sdcard/tmp" >
 
         <requestFocus />
     </EditText>

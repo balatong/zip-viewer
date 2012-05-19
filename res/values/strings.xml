@@ -20,23 +20,40 @@
     <string name="label_sha1">SHA1: </string>
     
     <string name="title_extract_files">Extract File(s)</string>
+    <string name="title_check_files">Check File(s)</string>
+    <string name="title_add_files">Add File(s)</string>
     <string name="title_file_info">File Info</string>
-    
+    <string name="title_open_google_play">Connect to Google Play Store?</string>
+	<string name="title_delete_files">Delete File(s)</string>
+        
     <string name="select_file_to_load">Select a file to load.</string>
     <string name="reading_file">Reading %d file(s).</string>
+
     <string name="extracting_file">Extracting file: %s&#8230;</string>
     <string name="extracting_files">Extracting file(s).</string>
     <string name="extracted_num_files">Extracted %d file(s).</string>
     <string name="num_out_of_processed">%1$s out of %2$s file(s) processed.</string>
+
     <string name="confirm_file_check">Proceed with CRC check?</string>
-    <string name="calculating_crc">Calculating CRC: %s&#8230;</string>
     <string name="validating_files">Validating file(s).</string>
+    <string name="calculating_crc">Calculating CRC: %s&#8230;</string>
     <string name="validated_file">%d file(s) failed validation.</string>
-	
+
+    <string name="updating_file">Updating file.</string>
+    <string name="confirm_file_add">Proceed with adding selected entries?</string>
+    <string name="adding_entry">Adding entry: %s&#8230;</string>	
+    <string name="added_files">%d file(s) added.</string>
+
+    <string name="confirm_file_delete">Proceed with deleting selected entries?</string>
+    <string name="deleting_entry">Deleting entry: %s&#8230;</string>	
+    <string name="deleted_files">%d file(s) deleted.</string>
+    	
     <string name="info_install_file_manager">Please install a File Manager.</string>
     <string name="info_available_in_future_version">This feature would hopefully be available in future releases.</string>
-    <string name="info_please_input_path">Please input the directory where you want to extract the file(s).</string>
-
+    <string name="info_please_input_extract_path">Please input the directory where you want to extract the file(s).</string>
+    <string name="info_please_input_add_path">Please input the file/directory that you want to be added to the zip file.</string>
+    <string name="info_no_file_manager_installed">It seems you do not have a file manager installed. Do you want to install one from Google Play Store?</string>
+    
     <string name="warn_not_yet_implemented">Not yet implemented.</string>
     
     <string name="err_not_valid_zip_file">%s is not a valid archive.</string>
