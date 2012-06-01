@@ -433,20 +433,21 @@ public class ViewerActivity extends BaseActivity {
 				ImageButton menuOpen = (ImageButton)findViewById(R.id.img_btn_menu_open);
 				menuOpen.setEnabled(true);
 				toggleMenus(true);
-
+				
 				activityBar.setVisibility(ProgressBar.INVISIBLE);
 				statusBar.setText(statusText);
 				
 				zipContentsAdapter.uncheckItems();
 
-				ProgressBar pbarTotalEntries = (ProgressBar)progressView.findViewById(R.id.pbar_processing_total);
-				pbarTotalEntries.incrementProgressBy(1);
-
-				ProgressBar pbarEntry = (ProgressBar)progressView.findViewById(R.id.pbar_processing_entry);
-				pbarEntry.setMax(1);
-				pbarEntry.setProgress(1);
-				
-				progressView = null;
+				if (progressView != null) {
+					ProgressBar pbarTotalEntries = (ProgressBar)progressView.findViewById(R.id.pbar_processing_total);
+					pbarTotalEntries.incrementProgressBy(1);
+	
+					ProgressBar pbarEntry = (ProgressBar)progressView.findViewById(R.id.pbar_processing_entry);
+					pbarEntry.setMax(1);
+					pbarEntry.setProgress(1);
+					progressView = null;
+				}
 			}
 			else if (VA_SHOW_NEW_PROGRESS_INFO.equals(action)) {
 				String statusText = intent.getExtras().getString(STATUS_TEXT);
@@ -476,6 +477,9 @@ public class ViewerActivity extends BaseActivity {
 			}
 			else if (VA_SHOW_FILE_CHECKSUMS.equals(action)) {
 				String md5 = intent.getExtras().getString("MD5");
+				if (infoView == null) 
+					return;
+				
 				LinearLayout view = (LinearLayout)infoView.findViewById(R.id.txt_md5);
 				TextView md5View = new TextView(ViewerActivity.this);
 				md5View.setText(md5);

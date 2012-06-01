@@ -124,12 +124,13 @@ public class CrcValidator extends AsyncTask<Object, Object, List<String>> {
 			return new ArrayList<String>();
 		}
 		finally {
-			logger.info("Closing " + zipFile.getName() + ".");
 			try {
-				if (zipFile != null)
+				if (zipFile != null) {
+					logger.info("Closing " + zipFile.getName() + ".");
 					zipFile.close();
+				}
 			}
-			catch (IOException e) {
+			catch (Exception e) {
 			}
 		}
 
